@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global settings for the website",
+      "type": "object",
+      "properties": {
+        "discordLink": { "type": "string" },
+        "tiktokLink": { "type": "string" },
+        "instagramLink": { "type": "string" },
+        "emailSupport": { "type": "string" },
+        "supportPhone": { "type": "string" },
+        "supportUsername": { "type": "string" },
+        "heroBackground": { "type": "string" },
+        "mainHashtag": { "type": "string" }
+      }
+    },
+    "JoinRequest": {
+      "title": "JoinRequest",
+      "description": "Requests to join 3mr",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "tiktokUsername": { "type": "string" },
+        "since": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      }
+    },
+    "Designer": {
+      "title": "Designer",
+      "description": "Top Designers shown on site",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "image": { "type": "string" },
+        "specialty": { "type": "string" },
+        "isOnline": { "type": "boolean" },
+        "order": { "type": "number" }
+      }
+    },
+    "TikTokPost": {
+      "title": "TikTokPost",
+      "description": "TikTok videos posted by designers",
+      "type": "object",
+      "properties": {
+        "designerName": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "views": { "type": "number" },
+        "isReal": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "timestamp" }
+      }
+    }
+  },
+  "firestore": {
+    "settings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Stores site-wide settings"
+    },
+    "joinRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/JoinRequest" },
+      "description": "Stores join requests"
+    },
+    "designers/{designerId}": {
+      "schema": { "$ref": "#/entities/Designer" },
+      "description": "Stores designer profiles"
+    },
+    "tiktokPosts/{postId}": {
+      "schema": { "$ref": "#/entities/TikTokPost" },
+      "description": "Stores tracked hashtag videos"
+    }
+  }
+}
+

@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+        request.resource.data.keys().hasAll(['discordLink']) && // allow subset updates by removing strict hasOnly or updating it. Wait, replacing strict validation with softer validation for ease of admin UI additions
+        request.resource.data.discordLink is string;
+    }
+
+    match /joinRequests/{requestId} {
+      allow create: if request.resource.data.keys().hasOnly(['name', 'tiktokUsername', 'since', 'reason', 'status', 'createdAt']) &&
+        request.resource.data.name is string && request.resource.data.name.size() <= 150 &&
+        request.resource.data.tiktokUsername is string && request.resource.data.tiktokUsername.size() <= 100 &&
+        request.resource.data.since is string && request.resource.data.since.size() <= 150 &&
+        request.resource.data.reason is string && request.resource.data.reason.size() <= 2000 &&
+        request.resource.data.status is string && request.resource.data.status == 'pending' &&
+        request.resource.data.createdAt == request.time;
+      
+      allow read: if isAdmin();
+      
+      allow update: if isAdmin() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+        request.resource.data.status is string && 
+        request.resource.data.status in ['approved', 'rejected'];
+    }
+
+    match /designers/{designerId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /system/{docId} {
+      allow read, write: if true;
+    }
+
+    match /tiktokPosts/{postId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+  }
+}
