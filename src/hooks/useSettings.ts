@@ -4,6 +4,7 @@ import { db, auth } from '../lib/firebase';
 
 export interface SiteSettings {
   discordLink: string;
+  whatsappLink: string;
   tiktokLink: string;
   instagramLink: string;
   emailSupport: string;
@@ -11,17 +12,28 @@ export interface SiteSettings {
   supportUsername: string;
   heroBackground?: string;
   mainHashtag?: string;
+  kickUsername?: string;
+  kickLiveOverride?: boolean;
+  kickLiveTitle?: string;
+  kickLiveViewers?: number;
+  kickLiveCategory?: string;
 }
 
 const defaultSettings: SiteSettings = {
   discordLink: '#',
+  whatsappLink: '#',
   tiktokLink: '#',
   instagramLink: '#',
   emailSupport: 'support@abl-melsv.com',
   supportPhone: '+201508539885',
   supportUsername: '',
   heroBackground: '',
-  mainHashtag: '#مصممين_عمر_المنفايخ',
+  mainHashtag: '#خرطوم_دوشا',
+  kickUsername: '',
+  kickLiveOverride: false,
+  kickLiveTitle: 'بث مباشر',
+  kickLiveViewers: 0,
+  kickLiveCategory: 'Just Chatting'
 };
 
 export function useSettings() {
@@ -50,12 +62,6 @@ export function useSettings() {
   }, []);
 
   const saveSettings = async (newSettings: SiteSettings) => {
-    // Only attempt if authenticated
-    if (!auth.currentUser) {
-      console.error("You must be logged in to save settings.");
-      return false;
-    }
-    
     try {
       const docRef = doc(db, 'settings', 'main');
       await setDoc(docRef, newSettings);

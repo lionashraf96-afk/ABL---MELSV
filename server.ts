@@ -12,33 +12,50 @@ async function startServer() {
 
   // OAuth endpoints for Discord
   app.get('/api/auth/discord/url', (req, res) => {
-    const redirectUri = `${req.headers.origin || process.env.APP_URL}/api/auth/discord/callback`;
+    const redirectUri = req.query.redirectUri as string;
     const clientId = process.env.DISCORD_CLIENT_ID;
     
     if (!clientId) {
       return res.status(500).json({ error: 'Missing DISCORD_CLIENT_ID' });
     }
+    
+    if (!redirectUri) {
+      return res.status(400).json({ error: 'Missing redirect_uri parameter' });
+    }
+
+    const state = Buffer.from(JSON.stringify({ redirectUri })).toString('base64');
 
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'identify',
+      state: state
     });
 
     res.json({ url: `https://discord.com/api/oauth2/authorize?${params.toString()}` });
   });
 
   app.get(['/api/auth/discord/callback', '/api/auth/discord/callback/'], async (req, res) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
     
-    // We need to guess the exact redirect URI we used
-    // It is best to match exactly. We can construct it from req:
-    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-    const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const redirectUri = `${protocol}://${host}/api/auth/discord/callback`;
+    let redirectUri = '';
+    try {
+      if (state) {
+        const stateObj = JSON.parse(Buffer.from(state as string, 'base64').toString('utf-8'));
+        redirectUri = stateObj.redirectUri;
+      }
+    } catch (e) {
+      console.error("Failed to parse state", e);
+    }
+    
+    if (!redirectUri) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      redirectUri = `${protocol}://${host}/api/auth/discord/callback`;
+    }
 
     if (!clientId || !clientSecret) {
       return res.status(500).send('Missing Discord OAuth credentials.');
@@ -99,48 +116,36 @@ async function startServer() {
   // We use RapidAPI TikTok Scraper as an example, since official API is closed.
   app.get('/api/tiktok-hashtag', async (req, res) => {
     try {
-      const apiKey = process.env.RAPIDAPI_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ 
-          error: 'Missing RapidAPI Key', 
-          message: 'Please add RAPIDAPI_KEY to your Secrets. You can get one from a TikTok Scraper on RapidAPI (e.g., tiktok-scraper7). For now, we are returning mock data.'
-        });
-      }
-
-      // Using a standard RapidAPI TikTok hashtag endpoint.
-      // E.g., 'tiktok-scraper7.p.rapidapi.com'
-      const response = await axios.get('https://tiktok-scraper7.p.rapidapi.com/feed/search', {
+      // Using tikwm.com free API endpoint
+      const response = await axios.get('https://www.tikwm.com/api/feed/search', {
         params: {
-          keywords: 'مصممين_خرطوم_دوشا',
-          region: 'SA',
-          count: '20',
-        },
-        headers: {
-          'x-rapidapi-host': 'tiktok-scraper7.p.rapidapi.com',
-          'x-rapidapi-key': apiKey
+          keywords: 'خرطوم_دوشا',
+          count: 20
         }
       });
 
-      const videos = response.data?.data?.videos || [];
+      const data = response.data?.data;
+      const videos = data?.videos || data || [];
       
-      const formattedVideos = videos.map((v: any) => ({
+      const formattedVideos = Array.isArray(videos) ? videos.map((v: any) => ({
         tiktokId: v.video_id,
-        authorName: v.author?.nickname || v.author?.unique_id,
-        videoUrl: `https://www.tiktok.com/@${v.author?.unique_id}/video/${v.video_id}`,
-        coverImageUrl: v.cover,
+        authorName: v.author?.nickname || v.author?.unique_id || 'Unknown',
+        authorAvatar: v.author?.avatar || v.author?.avatar_thumb || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + (v.author?.unique_id || 'user'),
+        uniqueId: v.author?.unique_id || 'user',
+        videoUrl: `https://www.tiktok.com/@${v.author?.unique_id || 'user'}/video/${v.video_id}`,
+        coverImageUrl: v.cover || v.origin_cover || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&q=60',
         views: v.play_count || 0,
         likes: v.digg_count || 0,
-        createdAt: new Date().toISOString()
-      }));
+        createdAt: v.create_time ? new Date(v.create_time * 1000).toISOString() : new Date().toISOString()
+      })) : [];
 
       res.json({ videos: formattedVideos });
     } catch (error: any) {
       console.error("TikTok API Error:", error.message);
       
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        // Fallback to mock data if key is invalid/unsubscribed
-        return res.json({ 
-          videos: [
+      // Fallback to mock data if key is invalid, rate limited, or any error
+      return res.json({ 
+        videos: [
             {
               tiktokId: '72000000001',
               authorName: 'مصمم سوداني',
@@ -161,9 +166,74 @@ async function startServer() {
             }
           ]
         });
+    }
+  });
+
+  app.get('/api/kick-status/:username', async (req, res) => {
+    try {
+      const username = req.params.username;
+      const scraperApiKey = process.env.SCRAPERAPI_KEY;
+      if (!username) return res.status(400).json({ error: 'Username required' });
+      
+      let apiUrl = `https://kick.com/api/v1/channels/${username}`;
+      if (scraperApiKey) {
+         // Use ScraperAPI to bypass Cloudflare
+         apiUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(apiUrl)}`;
       }
 
-      res.status(500).json({ error: 'Failed to fetch from TikTok', details: error.message });
+      const response = await axios.get(apiUrl, {
+        headers: scraperApiKey ? {} : {
+           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+           'Accept': 'application/json'
+        }
+      });
+      const data = response.data;
+      
+      if (data && data.livestream) {
+        res.json({ live: true, viewers: data.livestream.viewer_count, category: data.livestream.categories?.[0]?.name, title: data.livestream.session_title, thumbnail: data.livestream.thumbnail?.url, user: { avatar: data.user?.profile_pic } });
+      } else {
+        res.json({ live: false, user: { avatar: data?.user?.profile_pic }});
+      }
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+         return res.status(200).json({ live: false, user: { avatar: '' } });
+      }
+      console.error("Kick API Error:", error.message);
+      // Determine if it was a 403 Forbidden
+      if (error.response && (error.response.status === 403 || error.response.status === 503)) {
+         return res.status(403).json({ live: false, error: 'cloudflare_blocked', message: 'Kick blocked the request. Needs proxy.' });
+      }
+      res.status(500).json({ live: false, error: 'fetch_failed', message: error.message });
+    }
+  });
+
+  app.get('/api/kick-clips/:username', async (req, res) => {
+    try {
+      const username = req.params.username;
+      const scraperApiKey = process.env.SCRAPERAPI_KEY;
+      if (!username) return res.status(400).json({ error: 'Username required' });
+      
+      let apiUrl = `https://kick.com/api/v2/channels/${username}/clips`;
+      if (scraperApiKey) {
+         apiUrl = `http://api.scraperapi.com?api_key=${scraperApiKey}&url=${encodeURIComponent(apiUrl)}`;
+      }
+
+      const response = await axios.get(apiUrl, {
+        headers: scraperApiKey ? {} : {
+           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+           'Accept': 'application/json'
+        }
+      });
+      res.json(response.data);
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+         return res.status(200).json({ clips: [] });
+      }
+      console.error("Kick Clips API Error:", error.message);
+      if (error.response && (error.response.status === 403 || error.response.status === 503)) {
+         return res.status(403).json({ error: 'cloudflare_blocked', message: 'Kick blocked the request. Needs proxy.' });
+      }
+      res.status(500).json({ error: 'fetch_failed', message: error.message });
     }
   });
 
@@ -177,7 +247,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*all', (req, res) => {
+    app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

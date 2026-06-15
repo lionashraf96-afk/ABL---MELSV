@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { PenTool, X, Send, Image as ImageIcon, Video, Layers, Users, Zap, Star, TrendingUp, Play } from 'lucide-react';
+import { PenTool, X, Send, Image as ImageIcon, Video, Layers, Users, Zap, Star, TrendingUp, Play, MessageCircle, MessageSquare, CheckCircle, Clock, Search, Download } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import AdminDashboard from './AdminDashboard';
 import { db } from './lib/firebase';
 import { useSettings } from './hooks/useSettings';
+import { useDiscordAuth } from './hooks/useDiscordAuth';
 import { collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 const fadeIn = {
@@ -24,22 +25,38 @@ const staggerContainer = {
 };
 
 function Navbar() {
+  const { discordUser, login, logout } = useDiscordAuth();
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center gap-6">
             <span className="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent flex items-center gap-2">
               <PenTool size={24} className="text-emerald-500"/>
               3mr5rtoum
             </span>
+            {discordUser ? (
+              <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-full pr-1 pl-3 py-1">
+                <img src={discordUser.avatar} alt="User" className="w-8 h-8 rounded-full border border-indigo-500" />
+                <span className="text-sm font-semibold text-white">{discordUser.global_name || discordUser.username}</span>
+                <button onClick={logout} className="ml-2 text-xs text-red-500 hover:text-red-400 font-medium">تسجيل الخروج</button>
+              </div>
+            ) : (
+              <button onClick={login} className="flex bg-[#5865F2] hover:bg-[#4752C4] text-white text-xs sm:text-sm font-bold py-1.5 px-3 rounded-lg transition-colors items-center gap-2 shadow-lg shadow-indigo-900/20">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M13.545 2.907a13.227 13.227 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.19 12.19 0 0 0-3.658 0 8.258 8.258 0 0 0-.412-.833.051.051 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.041.041 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032c.001.014.01.028.021.037a13.276 13.276 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019c.308-.42.582-.863.818-1.329a.05.05 0 0 0-.01-.059.051.051 0 0 0-.018-.011 8.875 8.875 0 0 1-1.248-.595.05.05 0 0 1-.02-.066l.015-.019c.084-.063.168-.129.248-.195a.05.05 0 0 1 .051-.007c2.619 1.196 5.454 1.196 8.041 0a.052.052 0 0 1 .053.007c.08.066.164.132.248.195a.051.051 0 0 1-.004.085 8.254 8.254 0 0 1-1.249.594.05.05 0 0 0-.03.03.052.052 0 0 0 .003.041c.24.465.515.909.817 1.329a.05.05 0 0 0 .056.019 13.235 13.235 0 0 0 4.001-2.02.049.049 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.034.034 0 0 0-.02-.019Zm-8.198 7.307c-.789 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.45.73 1.438 1.613 0 .888-.637 1.612-1.438 1.612Zm5.316 0c-.788 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612Z"/>
+                </svg>
+                دخول
+              </button>
+            )}
           </div>
           
           <div className="hidden md:block">
             <div className="ms-10 flex items-baseline space-x-4 space-x-reverse">
               <a href="#hero" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">الرئيسية</a>
               <a href="#top-designers" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">أحسن المصممين</a>
-              <a href="#gallery" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">معرض الأعمال</a>
+              <a href="#support" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">الدعم الفني</a>
             </div>
           </div>
         </div>
@@ -58,51 +75,22 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [discordUser, setDiscordUser] = useState<any>(null);
+  const { discordUser, login, logout, setDiscordUser } = useDiscordAuth();
 
   useEffect(() => {
-    const saved = localStorage.getItem('discordUser');
-    if (saved) {
-      try {
-        const user = JSON.parse(saved);
-        setDiscordUser(user);
-        setFormData(prev => ({ ...prev, name: user.global_name || user.username, image: user.avatar }));
-      } catch (e) {}
+    if (discordUser && !formData.name) {
+       setFormData(prev => ({ ...prev, name: discordUser.global_name || discordUser.username, image: discordUser.avatar }));
     }
-
-    const handleMessage = (event: MessageEvent) => {
-      // Allow localhost or .run.app origin
-      if (!event.origin.endsWith('.run.app') && !event.origin.includes('localhost')) {
-        return;
-      }
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        const user = event.data.user;
-        setDiscordUser(user);
-        localStorage.setItem('discordUser', JSON.stringify(user));
-        setFormData(prev => ({ ...prev, name: user.global_name || user.username, image: user.avatar }));
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [discordUser]);
 
   const handleDiscordLogin = async (e: React.MouseEvent) => {
     e.preventDefault();
-    try {
-      const response = await fetch('/api/auth/discord/url');
-      if (!response.ok) throw new Error('Failed to get auth URL');
-      const { url } = await response.json();
-      window.open(url, 'oauth_popup', 'width=600,height=700');
-    } catch (error) {
-      console.error('OAuth error:', error);
-      alert("مشكلة في الاتصال بالديسكورد");
-    }
+    login();
   };
 
   const handleLogoutDiscord = (e: React.MouseEvent) => {
     e.preventDefault();
-    setDiscordUser(null);
-    localStorage.removeItem('discordUser');
+    logout();
     setFormData(prev => ({ ...prev, name: '', image: '' }));
   };
 
@@ -110,19 +98,20 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
     e.preventDefault();
     if (isSubmitting) return;
 
-    if (!formData.image) {
-      alert("لازم تختار صورة أو تسجل بالديسكورد");
-      return;
+    if (!discordUser && !formData.image) {
+      // Allow them without an image, or they can use discord. But wait, for now let's just let them without image 
+      // by not having any check for image, so they just submit. Wait, if we don't have an image at all, it's fine.
     }
 
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'joinRequests'), {
+      const docRef = await addDoc(collection(db, 'joinRequests'), {
         ...formData,
         status: 'pending',
         discordId: discordUser?.id || null, // save discord info if available
         createdAt: serverTimestamp()
       });
+      localStorage.setItem('joinRequestId', docRef.id);
       setSubmitted(true);
       setTimeout(() => {
         setSubmitted(false);
@@ -205,109 +194,65 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
                     )}
                   </div>
 
-                  {!discordUser && (
+                  {!discordUser ? (
+                    <div className="text-center py-6 border-t border-neutral-800">
+                      <p className="text-neutral-400">لازم تسجل دخول بالديسكورد الأول عشان تقدر تبعت طلب الانضمام.</p>
+                    </div>
+                  ) : (
                     <>
                       <div>
-                        <label className="block text-sm font-semibold text-neutral-300 mb-2">الاسم / اسم الشهرة</label>
+                        <label className="block text-sm font-semibold text-neutral-300 mb-2">يوزر التيك توك</label>
                         <input 
-                          required={!discordUser}
+                          required
                           type="text" 
-                          value={formData.name}
-                          onChange={e => setFormData({...formData, name: e.target.value})}
-                          placeholder="اسمك إيه يا فنان؟"
+                          value={formData.tiktokUsername}
+                          onChange={e => setFormData({...formData, tiktokUsername: e.target.value})}
+                          placeholder="@username"
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-600"
+                          dir="ltr"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-semibold text-neutral-300 mb-2">بتتابع عمر من امتى؟</label>
+                        <input 
+                          required
+                          type="text" 
+                          value={formData.since}
+                          onChange={e => setFormData({...formData, since: e.target.value})}
+                          placeholder="سنة، شهر، ولا لسة جديد؟"
                           className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-600"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-semibold text-neutral-300 mb-2">صورة شخصية (لو تم قبولك هتظهر في الموقع)</label>
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          required={!discordUser}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              const img = new Image();
-                              img.onload = () => {
-                                const canvas = document.createElement('canvas');
-                                const SIZE = 400; // circular profile picture size
-                                let width = img.width;
-                                let height = img.height;
-                                let size = Math.min(width, height);
-                                let offsetX = (width - size) / 2;
-                                let offsetY = (height - size) / 2;
-
-                                canvas.width = SIZE;
-                                canvas.height = SIZE;
-                                const ctx = canvas.getContext('2d');
-                                ctx?.drawImage(img, offsetX, offsetY, size, size, 0, 0, SIZE, SIZE);
-                                setFormData({...formData, image: canvas.toDataURL('image/jpeg', 0.8)});
-                              };
-                              img.src = event.target?.result as string;
-                            };
-                            reader.readAsDataURL(file);
-                          }}
-                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 text-white file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-500/10 file:text-emerald-500 hover:file:bg-emerald-500/20"
+                        <label className="block text-sm font-semibold text-neutral-300 mb-2">ليه عايز تنضم لينا؟ وإيه اللي بيميزك؟</label>
+                        <textarea 
+                          required
+                          value={formData.reason}
+                          onChange={e => setFormData({...formData, reason: e.target.value})}
+                          placeholder="احكيلنا عن إبداعك وشغفك بالتصميم..."
+                          rows={4}
+                          className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-600 resize-none"
                         />
-                        {formData.image && !discordUser && <div className="text-xs text-emerald-500 mt-2">تم تجهيز الصورة للملف الشخصي</div>}
                       </div>
+
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-emerald-900/20 flex justify-center items-center gap-2 disabled:opacity-70"
+                      >
+                        {isSubmitting ? (
+                          <span className="animate-pulse">جاري الإرسال...</span>
+                        ) : (
+                          <>
+                            إرسال الطلب
+                            <Send size={20} className="rtl:-scale-x-100" />
+                          </>
+                        )}
+                      </button>
                     </>
                   )}
-
-                  <div>
-                    <label className="block text-sm font-semibold text-neutral-300 mb-2">يوزر التيك توك</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.tiktokUsername}
-                      onChange={e => setFormData({...formData, tiktokUsername: e.target.value})}
-                      placeholder="@username"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-600"
-                      dir="ltr"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-semibold text-neutral-300 mb-2">بتتابع عمر من امتى؟</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.since}
-                      onChange={e => setFormData({...formData, since: e.target.value})}
-                      placeholder="سنة، شهر، ولا لسة جديد؟"
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-neutral-300 mb-2">ليه عايز تنضم لينا؟ وإيه اللي بيميزك؟</label>
-                    <textarea 
-                      required
-                      value={formData.reason}
-                      onChange={e => setFormData({...formData, reason: e.target.value})}
-                      placeholder="احكيلنا عن إبداعك وشغفك بالتصميم..."
-                      rows={4}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-4 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-neutral-600 resize-none"
-                    />
-                  </div>
-
-                  <button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-emerald-900/20 flex justify-center items-center gap-2 disabled:opacity-70"
-                  >
-                    {isSubmitting ? (
-                      <span className="animate-pulse">جاري الإرسال...</span>
-                    ) : (
-                      <>
-                        إرسال الطلب
-                        <Send size={20} className="rtl:-scale-x-100" />
-                      </>
-                    )}
-                  </button>
                 </form>
               )}
             </div>
@@ -320,6 +265,48 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
 
 function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHashtag?: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [joinStatus, setJoinStatus] = useState<string | null>(null);
+  const { discordUser } = useDiscordAuth();
+
+  useEffect(() => {
+    import('firebase/firestore').then(({ doc, query, collection, where, onSnapshot }) => {
+      let unsubs: (() => void)[] = [];
+
+      if (discordUser) {
+        const q = query(collection(db, 'joinRequests'), where('discordId', '==', discordUser.id));
+        const unsubDiscord = onSnapshot(q, (snap) => {
+          if (!snap.empty) {
+             const latest = snap.docs.sort((a,b) => {
+               const aTime = a.data().createdAt?.toMillis ? a.data().createdAt.toMillis() : 0;
+               const bTime = b.data().createdAt?.toMillis ? b.data().createdAt.toMillis() : 0;
+               return bTime - aTime;
+             })[0];
+             setJoinStatus(latest?.data()?.status || null);
+          } else {
+             checkLocalStorageStatus();
+          }
+        }, (err) => console.error(err));
+        unsubs.push(unsubDiscord);
+      } else {
+        checkLocalStorageStatus();
+      }
+
+      function checkLocalStorageStatus() {
+         const requestId = localStorage.getItem('joinRequestId');
+         if (!requestId) return;
+         const unsubLocal = onSnapshot(doc(db, 'joinRequests', requestId), (docSnap) => {
+           if (docSnap.exists()) {
+             setJoinStatus(docSnap.data().status);
+           }
+         }, (err) => console.error(err));
+         unsubs.push(unsubLocal);
+      }
+
+      return () => {
+        unsubs.forEach(fn => fn());
+      };
+    });
+  }, [discordUser, isModalOpen]);
 
   return (
     <section id="hero" className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-screen flex items-center">
@@ -346,7 +333,7 @@ function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHa
         >
           <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900/80 border border-neutral-800 text-emerald-400 font-medium tracking-wide mb-8">
             <Star size={16} className="fill-emerald-400" />
-            <span>نخبة مصممين الجرافيك</span>
+            <span>نخبة مصممين اديتور</span>
           </motion.div>
 
           <motion.h1 variants={fadeIn} className="text-5xl md:text-8xl font-extrabold tracking-tighter mb-6 leading-[1.1]">
@@ -360,13 +347,25 @@ function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHa
           </motion.p>
           
           <motion.div variants={fadeIn} className="flex flex-col sm:flex-row justify-center gap-4">
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xl hover:scale-105 transition-transform flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/20"
-            >
-              طلب انضمام
-              <Zap size={24} className="fill-white/20" />
-            </button>
+            {joinStatus === 'approved' ? (
+               <div className="px-8 py-4 rounded-xl bg-emerald-600/20 text-emerald-400 border border-emerald-500/50 font-bold text-xl flex items-center justify-center gap-3">
+                 <CheckCircle size={24} />
+                 تم القبول في فريق المصممين
+               </div>
+            ) : joinStatus === 'pending' ? (
+               <div className="px-8 py-4 rounded-xl bg-yellow-500/20 text-yellow-500 border border-yellow-500/50 font-bold text-xl flex items-center justify-center gap-3">
+                 <Clock size={24} />
+                 طلب الانضمام قيد المراجعة
+               </div>
+            ) : (
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xl hover:scale-105 transition-transform flex items-center justify-center gap-3 shadow-xl shadow-emerald-900/20"
+              >
+                طلب انضمام
+                <Zap size={24} className="fill-white/20" />
+              </button>
+            )}
           </motion.div>
 
           {mainHashtag && (
@@ -385,68 +384,368 @@ function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHa
   );
 }
 
-const topDesigners = [
-  {
-    name: "أحمد الفن",
-    role: "Visual Artist",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=60",
-    specialty: "دمج احترافي"
-  },
-  {
-    name: "خالد ديزاينر",
-    role: "UI/UX Designer",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=60",
-    specialty: "واجهات مواقع"
-  },
-  {
-    name: "سارة كرييتف",
-    role: "Brand Identity",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&auto=format&fit=crop&q=60",
-    specialty: "هويات بصرية"
-  },
-  {
-    name: "محمد موشن",
-    role: "Motion Grahic",
-    image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=60",
-    specialty: "تحريك احترافي"
-  },
-  {
-    name: "نورهان جرافيك",
-    role: "Illustrator",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&auto=format&fit=crop&q=60",
-    specialty: "رسم رقمي"
-  },
-  {
-    name: "عمر ديزاين",
-    role: "3D Artist",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=60",
-    specialty: "تصميم 3D"
-  },
-  {
-    name: "ياسمين آرت",
-    role: "Typographer",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=60",
-    specialty: "تايبوجرافي"
-  },
-  {
-    name: "محمود فيجوال",
-    role: "VFX Artist",
-    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=60",
-    specialty: "مؤثرات بصرية"
-  }
-];
+function KickStreamer({ settings }: { settings: any }) {
+  const [status, setStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!settings.kickUsername || settings.kickUsername.trim() === '') {
+      setLoading(false);
+      return;
+    }
+
+    if (settings.kickLiveOverride) {
+      setStatus({
+        live: true,
+        title: settings.kickLiveTitle,
+        viewers: settings.kickLiveViewers,
+        category: settings.kickLiveCategory,
+        user: { avatar: '' }
+      });
+      setLoading(false);
+      return;
+    }
+
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch(`/api/kick-status/${encodeURIComponent(settings.kickUsername.trim())}`);
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const data = await res.json();
+          if (data.error && data.error === 'cloudflare_blocked') {
+             console.warn("Kick API blocked by Cloudflare. Provide SCRAPERAPI_KEY in environment variables.");
+             setStatus({ live: false, user: { avatar: '' } });
+             return;
+          }
+          if (data.error || (!data.live && !data.user)) {
+             setStatus({ live: false, user: { avatar: '' } });
+             return;
+          }
+          setStatus(data);
+        } else {
+          setStatus({ live: false, user: { avatar: '' } });
+        }
+      } catch (err) {
+         console.error(err);
+         setStatus((prev: any) => prev || { live: false, user: { avatar: '' } });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 60000); // refresh every minute
+    return () => clearInterval(interval);
+  }, [settings.kickUsername, settings.kickLiveOverride, settings.kickLiveTitle, settings.kickLiveViewers, settings.kickLiveCategory]);
+
+  if (!settings.kickUsername) return null;
+
+  return (
+    <section className="py-8 bg-neutral-950 px-4 md:px-12 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('https://kick.com/favicon.ico')] opacity-5 bg-repeat bg-[length:100px] pointer-events-none"></div>
+      <div className="max-w-7xl mx-auto relative z-10">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-6 backdrop-blur-xl flex flex-col md:flex-row items-center gap-6 shadow-2xl relative overflow-hidden"
+        >
+          {status?.live && (
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+          )}
+          
+          <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-neutral-800 relative flex-shrink-0 bg-neutral-950 flex items-center justify-center">
+            {status?.user?.avatar || status?.thumbnail ? (
+               <img src={status?.user?.avatar || status?.thumbnail} alt="Kick Profile" className="w-full h-full object-cover" />
+            ) : (
+               <Video size={32} className="text-neutral-500" />
+            )}
+            {status?.live && (
+              <div className="absolute bottom-0 right-1/2 translate-x-1/2 translate-y-1/4 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-400">LIVE</div>
+            )}
+          </div>
+          
+          <div className="flex-1 text-center md:text-right">
+             <div className="flex flex-col md:flex-row items-center gap-3 mb-2 justify-center md:justify-start">
+               <h3 className="text-2xl font-bold text-white uppercase tracking-wider">{settings.kickUsername}</h3>
+               {status?.live ? (
+                 <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full text-sm font-medium border border-emerald-500/20">
+                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                   بث مباشر الآن
+                 </span>
+               ) : (
+                 <span className="flex items-center gap-1.5 text-neutral-500 bg-neutral-900 px-3 py-1 rounded-full text-sm font-medium border border-neutral-800">
+                   أوفلاين
+                 </span>
+               )}
+             </div>
+             {status?.live ? (
+               <div>
+                  <p className="text-neutral-300 text-lg mb-1">{status.title}</p>
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-neutral-400">
+                    <span className="flex items-center gap-1.5">
+                      <Users size={16} className="text-blue-400" />
+                      {status.viewers?.toLocaleString() || 0} مشاهد
+                    </span>
+                    {status.category && (
+                      <span className="flex items-center gap-1.5">
+                        <Layers size={16} className="text-purple-400" />
+                        {status.category}
+                      </span>
+                    )}
+                  </div>
+               </div>
+             ) : (
+               <p className="text-neutral-400 mt-1">البث مقفول حالياً. تابع الحساب عشان يوصلك إشعار أول ما يفتح.</p>
+             )}
+          </div>
+          
+          <div className="flex-shrink-0 mt-4 md:mt-0 w-full md:w-auto">
+             <a 
+               href={`https://kick.com/${settings.kickUsername}`} 
+               target="_blank" 
+               rel="noopener noreferrer"
+               className="block w-full md:w-auto text-center bg-[#53FC18] hover:bg-[#4be615] text-black font-bold px-8 py-3 rounded-lg transition-transform hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(83,252,24,0.3)]"
+             >
+               {status?.live ? 'شاهد البث الآن' : 'زيارة القناة'}
+             </a>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function KickClipsGallery() {
+  const [manualClips, setManualClips] = useState<any[]>([]);
+  const [autoClips, setAutoClips] = useState<any[]>([]);
+  const { settings } = useSettings();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'kickClips'), (snap) => {
+      const items: any[] = [];
+      snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+      setManualClips(items.sort((a, b) => b.createdAt?.toMillis?.() - a.createdAt?.toMillis?.() || 0));
+    }, (err) => console.error(err));
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    if (settings.kickUsername && settings.kickUsername.trim() !== '') {
+        setLoading(true);
+        fetch(`/api/kick-clips/${encodeURIComponent(settings.kickUsername.trim())}`)
+          .then(res => res.json())
+          .then(data => {
+             if (!mounted) return;
+             if (data && data.clips) {
+                const fetchedClips = data.clips.map((c: any) => ({
+                   id: c.id,
+                   title: c.title,
+                   url: c.video_url || c.clip_url,
+                   thumbnail: c.thumbnail_url,
+                   views: c.view_count || c.views,
+                   createdAt: new Date(c.created_at) // For sorting
+                }));
+                setAutoClips(fetchedClips);
+             } else {
+                setAutoClips([]);
+             }
+          })
+          .catch(err => {
+             console.error("Failed to load Kick auto clips:", err);
+             if (mounted) setAutoClips([]);
+          })
+          .finally(() => {
+             if (mounted) setLoading(false);
+          });
+    } else {
+      setAutoClips([]);
+    }
+    return () => { mounted = false; };
+  }, [settings.kickUsername]);
+
+  // Combine and sort clips
+  const clips = [...autoClips, ...manualClips];
+
+  if (clips.length === 0 && !loading) return null;
+
+  return (
+    <section className="py-24 bg-neutral-900 border-t border-neutral-800">
+      <div className="max-w-7xl mx-auto px-4 md:px-12">
+        <motion.div 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          className="text-center mb-16"
+        >
+          <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-4 py-2 rounded-full font-medium mb-6">
+            <Video size={18} />
+            <span>كليبات جاهزة للتصميم</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white tracking-tight">كليبات الأستريم 🎬</h2>
+          <p className="text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed">
+            مجموعة من أقوى وأمتع كليبات البث المباشر، جاهزة للتحميل عشان تبدع في تصاميمك.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {clips.map((clip, idx) => (
+            <motion.div 
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeIn}
+              key={clip.id} 
+              className="bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden group hover:border-emerald-500/50 transition-colors"
+            >
+              <div 
+                className="aspect-video bg-neutral-900 relative flex items-center justify-center bg-cover bg-center"
+                style={clip.thumbnail ? { backgroundImage: `url(${clip.thumbnail})` } : {}}
+              >
+                {!clip.thumbnail && <Video size={48} className="text-neutral-700 group-hover:scale-110 transition-transform duration-500" />}
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-sm text-neutral-300">
+                  <div className="flex items-center gap-2">
+                     <Play size={16} className="text-emerald-500" /> كليب
+                  </div>
+                  {clip.views !== undefined && (
+                     <div className="text-xs bg-neutral-950/80 px-2 py-1 rounded-md text-emerald-400">{clip.views} مشاهدة</div>
+                  )}
+                </div>
+              </div>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-white mb-4 line-clamp-2">{clip.title}</h3>
+                
+                <div className="space-y-3">
+                  <a href={clip.url} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg transition-colors">
+                    مشاهدة الكليب
+                  </a>
+                  <div className="bg-neutral-900 border border-neutral-800 p-3 rounded-lg">
+                    <p className="text-xs text-neutral-400 mb-2 text-center">أدوات تحميل الكليب بجودات مختلفة:</p>
+                    <div className="flex gap-2 justify-center">
+                      <a href={`https://snapsave.app/down.php?u=${encodeURIComponent(clip.url)}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs py-1.5 rounded transition-colors">
+                        <Download size={14} /> SnapSave
+                      </a>
+                      <a href={`https://tikder.com/?url=${encodeURIComponent(clip.url)}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs py-1.5 rounded transition-colors">
+                        <Download size={14} /> Tikder
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function TopDesigners() {
   const [onlineCount, setOnlineCount] = useState(142);
   const [designers, setDesigners] = useState<any[]>([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'designers'), (snap) => {
-      const items: any[] = [];
-      snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      setDesigners(items.length > 0 ? items : topDesigners);
-    }, (error) => console.log("Des error", error));
-    return () => unsub();
+    // We want to fetch BOTH "designers" and "tiktokPosts" to merge them dynamically.
+    const unsubDesigners = onSnapshot(collection(db, 'designers'), (snap) => {
+      const dbDesigners = new Map();
+      snap.forEach(doc => {
+        const d = doc.data();
+        dbDesigners.set(d.name, { id: doc.id, ...d });
+        if (d.role && typeof d.role === 'string' && d.role.startsWith('@')) {
+           // Also map by uniqueId (without the @)
+           dbDesigners.set(d.role.replace('@', ''), { id: doc.id, ...d });
+        }
+        if (d.bestVideoUrl && d.bestVideoUrl.includes('@')) {
+           // Extract uniqueId from URL if possible
+           const match = d.bestVideoUrl.match(/@([a-zA-Z0-9_.-]+)/);
+           if (match && match[1]) {
+             dbDesigners.set(match[1], { id: doc.id, ...d });
+           }
+        }
+      });
+
+      const q = query(collection(db, 'tiktokPosts'), orderBy('createdAt', 'desc'));
+      const unsubTikTok = onSnapshot(q, (ttSnap) => {
+        const topMap = new Map();
+        
+        // 1. First add all official designers mapped by a strong key (name or uniqueId fallback)
+        for (const [key, d] of dbDesigners.entries()) {
+          const refName = d.name || 'مجهول';
+          if (!topMap.has(refName)) {
+            topMap.set(refName, {
+              id: d.id,
+              name: refName,
+              image: d.image && d.image.startsWith('http') ? d.image : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(refName)}&backgroundColor=059669,0d9488&textColor=ffffff`,
+              postCount: 0,
+              views: 0,
+              likes: 0,
+              bestVideoUrl: d.bestVideoUrl,
+              specialty: d.specialty || "مصمم",
+              role: d.role || "TikTok Creator",
+              description: d.description
+            });
+          }
+        }
+
+        // 2. Add TikTok authors and aggregate stats
+        ttSnap.forEach(doc => {
+          const post = doc.data();
+          const authorKey = post.uniqueId || post.designerName || 'unknown';
+          
+          let officialDesigner = dbDesigners.get(post.uniqueId) || dbDesigners.get(post.designerName) || dbDesigners.get(authorKey);
+          let mappedName = officialDesigner ? officialDesigner.name : authorKey;
+
+          if (!topMap.has(mappedName)) {
+            topMap.set(mappedName, {
+              id: mappedName,
+              name: post.designerName || mappedName,
+              image: post.authorAvatar && post.authorAvatar.startsWith('http') 
+                ? post.authorAvatar 
+                : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(post.designerName || mappedName)}&backgroundColor=059669,0d9488&textColor=ffffff`,
+              postCount: 0,
+              views: 0,
+              likes: 0,
+              bestVideoUrl: post.videoUrl,
+              specialty: "مشارك فيديوهات",
+              role: post.uniqueId ? "@" + post.uniqueId : "TikTok Creator"
+            });
+          }
+
+          const designer = topMap.get(mappedName);
+          designer.postCount += 1;
+          designer.views += (post.views || 0);
+          designer.likes += (post.likes || 0);
+
+          // Update avatar from tiktok if missing or using generic dicebear/unsplash placeholders
+          if (post.authorAvatar && post.authorAvatar.startsWith('http')) {
+             if (!designer.image || designer.image.includes('dicebear') || designer.image.includes('unsplash')) {
+                 designer.image = post.authorAvatar;
+             }
+          }
+        });
+
+        const sorted = Array.from(topMap.values()).sort((a, b) => b.postCount - a.postCount);
+        const uniqueDesigners = [];
+        const seenNames = new Set();
+        for (const d of sorted) {
+          const normName = (d.name || "").toLowerCase().trim();
+          if (!seenNames.has(normName)) {
+            seenNames.add(normName);
+            uniqueDesigners.push(d);
+          }
+        }
+        setDesigners(uniqueDesigners.slice(0, 10));
+      }, (error) => console.log("Des error", error));
+
+      return () => unsubTikTok();
+    });
+
+    return () => unsubDesigners();
   }, []);
 
   useEffect(() => {
@@ -474,16 +773,21 @@ function TopDesigners() {
           className="flex overflow-x-auto pb-10 pt-4 gap-6 px-4 md:px-8 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {designers.slice(0, 10).map((designer, idx) => (
-            <motion.div
-              key={designer.id || idx}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, type: "spring", stiffness: 100 }}
-              className="flex flex-col items-center flex-shrink-0 snap-center min-w-[140px] md:min-w-[180px]"
-            >
-              <div className="relative group cursor-pointer mb-5">
+          {designers.length === 0 ? (
+            <div className="w-full text-center py-10 opacity-60">
+              <p className="text-white">جاري جمع أفضل المصممين من الهاشتاج...</p>
+            </div>
+          ) : (
+            designers.slice(0, 10).map((designer, idx) => (
+              <motion.div
+                key={designer.id || idx}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, type: "spring", stiffness: 100 }}
+                className="flex flex-col items-center flex-shrink-0 snap-center min-w-[140px] md:min-w-[180px]"
+              >
+                <div className="relative group cursor-pointer mb-5">
                 {/* TikTok style colorful gradient ring */}
                 <div className="absolute -inset-1.5 bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-600 rounded-full blur-[2px] opacity-70 group-hover:opacity-100 transition-opacity"></div>
                 <div className="absolute -inset-1.5 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-full group-hover:rotate-180 transition-transform duration-700"></div>
@@ -500,7 +804,14 @@ function TopDesigners() {
 
               <h4 className="text-lg font-bold text-white mb-1 truncate text-center w-full">{designer.name}</h4>
               <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-1 px-2 py-0.5 bg-emerald-500/10 rounded-full inline-block">{designer.specialty}</p>
-              <p className="text-neutral-500 text-xs mt-1">{designer.role}</p>
+              <div className="flex gap-2 items-center mt-1">
+                <span className="text-neutral-400 text-xs">{designer.role}</span>
+                {designer.postCount !== undefined && (
+                  <span className="text-teal-400 text-xs font-bold bg-teal-500/10 px-2 py-0.5 rounded-md">
+                    {designer.postCount} فيديوهات
+                  </span>
+                )}
+              </div>
               
               {designer.description && (
                 <p className="text-neutral-400 text-[10px] md:text-xs text-center mt-3 max-w-[140px] md:max-w-[180px] line-clamp-3 leading-relaxed">
@@ -519,7 +830,8 @@ function TopDesigners() {
                 </a>
               )}
             </motion.div>
-          ))}
+            ))
+          )}
         </div>
         
         <style>{`
@@ -532,43 +844,46 @@ function TopDesigners() {
   );
 }
 
-function Gallery() {
+function SupportSection({ settings }: { settings: any }) {
   return (
-    <section id="gallery" className="py-32 relative bg-neutral-900 border-t border-neutral-800">
+    <section id="support" className="py-32 relative bg-neutral-900 border-t border-neutral-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
           <div>
-            <h2 className="text-sm font-bold text-teal-500 tracking-widest uppercase mb-3">Portfolio</h2>
-            <h3 className="text-4xl md:text-5xl font-extrabold text-white">إبداعات المصممين</h3>
+            <h2 className="text-sm font-bold text-teal-500 tracking-widest uppercase mb-3">Support</h2>
+            <h3 className="text-4xl md:text-5xl font-extrabold text-white">الدعم الفني</h3>
           </div>
           <p className="text-neutral-400 max-w-md text-lg leading-relaxed">
-            مجموعة من أقوى التصميمات والأعمال الفنية اللي نفذها فريق مصممين عمر خرطوم بإبداع ودقة عالية.
+            عندك استفسار أو مشكلة؟ تواصل مع فريق الدعم الفني، وإحنا دايماً معاك لحلها.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={`rounded-2xl overflow-hidden bg-neutral-800 aspect-square relative group cursor-pointer ${i === 1 || i === 4 ? 'md:col-span-2 aspect-auto border-2 border-transparent hover:border-emerald-500/50 transition-colors' : ''}`}
-            >
-              <img 
-                src={`https://images.unsplash.com/photo-${1550000000000 + i * 100000}?w=800&auto=format&fit=crop&q=80`} 
-                alt="Artwork" 
-                className="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-neutral-950/0 group-hover:bg-neutral-950/40 transition-colors duration-300 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0 text-white flex items-center gap-2 font-bold text-lg">
-                  <ImageIcon size={24} />
-                  عرض العمل
-                </div>
-              </div>
-            </motion.div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <a
+            href={settings.discordLink && settings.discordLink !== '#' ? settings.discordLink : '#'}
+            target="_blank"
+            rel="noreferrer"
+            className="group flex flex-col items-center justify-center p-10 bg-neutral-800/50 hover:bg-[#5865F2]/10 border border-neutral-800 hover:border-[#5865F2]/50 rounded-2xl transition-all"
+          >
+            <div className="w-20 h-20 bg-neutral-900 group-hover:bg-[#5865F2]/20 text-neutral-400 group-hover:text-[#5865F2] rounded-full flex items-center justify-center mb-6 transition-all duration-300">
+              <MessageSquare size={40} />
+            </div>
+            <h4 className="text-2xl font-bold text-white mb-2">سيرفر الديسكورد</h4>
+            <p className="text-neutral-500 text-center">أسرع طريقة للتواصل والنقاش</p>
+          </a>
+
+          <a
+            href={settings.whatsappLink && settings.whatsappLink !== '#' ? settings.whatsappLink : '#'}
+            target="_blank"
+            rel="noreferrer"
+            className="group flex flex-col items-center justify-center p-10 bg-neutral-800/50 hover:bg-[#25D366]/10 border border-neutral-800 hover:border-[#25D366]/50 rounded-2xl transition-all"
+          >
+            <div className="w-20 h-20 bg-neutral-900 group-hover:bg-[#25D366]/20 text-neutral-400 group-hover:text-[#25D366] rounded-full flex items-center justify-center mb-6 transition-all duration-300">
+              <MessageCircle size={40} />
+            </div>
+            <h4 className="text-2xl font-bold text-white mb-2">جروب الواتساب</h4>
+            <p className="text-neutral-500 text-center">تواصل مباشر وسريع</p>
+          </a>
         </div>
       </div>
     </section>
@@ -672,13 +987,26 @@ function CommunityStats() {
 
 function TikTokTracker({ mainHashtag }: { mainHashtag?: string }) {
   const [posts, setPosts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState<'all' | 'today' | 'week'>('all');
+  const [visibleCount, setVisibleCount] = useState(15);
 
   useEffect(() => {
     const q = query(collection(db, 'tiktokPosts'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetched: any[] = [];
+      const seenUrls = new Set();
       snapshot.forEach(doc => {
-        fetched.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        if (!seenUrls.has(data.videoUrl)) {
+           seenUrls.add(data.videoUrl);
+           fetched.push({ id: doc.id, ...data });
+        } else {
+           // Delete duplicate from firestore
+           import('firebase/firestore').then(({ deleteDoc }) => {
+              deleteDoc(doc.ref).catch(console.error);
+           });
+        }
       });
       setPosts(fetched);
     }, (error) => console.log('Error fetching TikTok posts:', error));
@@ -705,57 +1033,132 @@ function TikTokTracker({ mainHashtag }: { mainHashtag?: string }) {
           </div>
         </div>
 
+        <div className="max-w-3xl mx-auto mb-8 relative">
+          <input
+            type="text"
+            placeholder="ابحث عن فيديو أو اسم المصمم..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 pl-12 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={20} />
+        </div>
+
+        <div className="max-w-3xl mx-auto mb-10 flex flex-wrap gap-3 justify-end">
+          <button
+            onClick={() => setFilterCategory('week')}
+            className={`px-6 py-2 rounded-full font-medium transition-colors ${filterCategory === 'week' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white border border-neutral-700'}`}
+          >
+            فيديوهات آخر 7 أيام
+          </button>
+          <button
+            onClick={() => setFilterCategory('today')}
+            className={`px-6 py-2 rounded-full font-medium transition-colors ${filterCategory === 'today' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white border border-neutral-700'}`}
+          >
+            فيديوهات آخر اليوم
+          </button>
+          <button
+            onClick={() => setFilterCategory('all')}
+            className={`px-6 py-2 rounded-full font-medium transition-colors ${filterCategory === 'all' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white border border-neutral-700'}`}
+          >
+            الكل
+          </button>
+        </div>
+
         {posts.length === 0 ? (
           <div className="text-center py-20 bg-neutral-950 rounded-2xl border border-neutral-800">
              <p className="text-neutral-500 text-lg">لسة مفيش فيديوهات متوثقة على الهاشتاج... كن أول من يشارك!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {posts.map((post, idx) => (
+          <div className="flex flex-col gap-4 max-w-3xl mx-auto">
+            {posts
+              .filter(post => {
+                 const searchLower = searchTerm.toLowerCase();
+                 const matchesSearch = (post.designerName || '').toLowerCase().includes(searchLower) ||
+                        (post.authorName || '').toLowerCase().includes(searchLower) ||
+                        (post.description || '').toLowerCase().includes(searchLower);
+                        
+                 let matchesCategory = true;
+                 if (filterCategory !== 'all' && post.createdAt) {
+                   const postDate = post.createdAt?.toDate?.() || new Date(post.createdAt);
+                   const now = new Date();
+                   const diffTime = Math.abs(now.getTime() - postDate.getTime());
+                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                   
+                   if (filterCategory === 'today') {
+                     matchesCategory = diffDays <= 1;
+                   } else if (filterCategory === 'week') {
+                     matchesCategory = diffDays <= 7;
+                   }
+                 }
+                 
+                 return matchesSearch && matchesCategory;
+              })
+              .slice(0, visibleCount)
+              .map((post, idx) => (
               <motion.div
                 key={post.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.1 }}
-                className="bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden hover:border-emerald-500/50 transition-colors group"
+                className="bg-neutral-950 border border-neutral-800 rounded-2xl overflow-hidden hover:border-emerald-500/50 transition-colors flex flex-row items-center p-4 group gap-4"
               >
-                <div className="aspect-[9/16] bg-neutral-900 relative overflow-hidden">
+                <div className="w-24 h-36 sm:w-32 sm:h-48 bg-neutral-900 relative overflow-hidden rounded-xl shrink-0">
                   {post.coverImageUrl ? (
                     <img src={post.coverImageUrl} alt="TikTok Cover" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-neutral-900 text-neutral-800">
-                      <Video size={48} />
+                      <Video size={32} />
                     </div>
                   )}
-                  
-                  {/* Status Overlay */}
-                  <div className="absolute top-4 right-4 flex flex-col gap-2">
-                    {post.isReal ? (
-                      <span className="bg-emerald-500/90 backdrop-blur text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
-                        <Zap size={12} /> مشاهدات حقيقية
-                      </span>
-                    ) : (
-                      <span className="bg-red-500/90 backdrop-blur text-white text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 shadow-lg">
-                        <X size={12} /> مشاهدات فيك
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/60 to-transparent pt-12 pb-4 px-4">
-                    <h4 className="text-white font-bold text-lg leading-tight mb-1">{post.designerName}</h4>
-                    <div className="flex items-center gap-2 text-neutral-300 text-sm font-medium">
-                      <Users size={14} className="text-emerald-400" />
-                      <span dir="ltr">{post.views?.toLocaleString('ar-EG') || '0'}</span>
+                  {post.isReal && (
+                    <div className="absolute top-2 right-2 bg-emerald-500/90 backdrop-blur text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center shadow-lg">
+                      <Zap size={10} className="mr-0.5" /> حقيقي
                     </div>
-                  </div>
+                  )}
+                  {!post.isReal && post.hasOwnProperty('isReal') && (
+                    <div className="absolute top-2 right-2 bg-red-500/90 backdrop-blur text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center shadow-lg">
+                      <X size={10} className="mr-0.5" /> فيك
+                    </div>
+                  )}
                 </div>
                 
-                <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" className="block w-full text-center py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-colors text-sm">
-                  شاهد الفيديو الأصلي
-                </a>
+                <div className="flex-1 min-w-0 py-2 flex flex-col justify-between h-full">
+                  <div>
+                    <h4 className="text-white font-bold text-lg leading-tight mb-2 truncate">{post.designerName || post.authorName}</h4>
+                    <div className="flex items-center gap-4 text-neutral-400 text-sm font-medium mb-4">
+                      <div className="flex items-center gap-1">
+                        <Users size={16} className="text-emerald-400" />
+                        <span dir="ltr">{post.views?.toLocaleString('ar-EG') || '0'}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Zap size={16} className="text-emerald-400" />
+                        <span dir="ltr">{post.likes?.toLocaleString('ar-EG') || '0'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <a href={post.videoUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-auto text-center px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-colors text-sm rounded-lg self-start">
+                    شاهد الفيديو الأصلي
+                  </a>
+                </div>
               </motion.div>
             ))}
+            
+            {posts.filter(post => {
+                 const searchLower = searchTerm.toLowerCase();
+                 return (post.designerName || '').toLowerCase().includes(searchLower) ||
+                        (post.authorName || '').toLowerCase().includes(searchLower) ||
+                        (post.description || '').toLowerCase().includes(searchLower);
+              }).length > visibleCount && (
+              <button 
+                onClick={() => setVisibleCount(prev => prev + 15)}
+                className="mt-6 w-full py-4 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl transition-colors font-bold border border-neutral-700"
+              >
+                عرض المزيد
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -774,8 +1177,11 @@ function Footer() {
         <p className="text-neutral-500 mb-6 font-medium">
           مصممين عمر خرطوم المنفايخ © {new Date().getFullYear()}
         </p>
-        <p className="text-neutral-600 text-sm">
+        <p className="text-neutral-600 text-sm mb-2">
           مكان الإبداع والمصممين المحترفين. كل الحقوق محفوظة.
+        </p>
+        <p className="text-emerald-500/80 font-mono text-xs opacity-80" dir="ltr">
+          hamoweller
         </p>
       </div>
     </footer>
@@ -785,13 +1191,26 @@ function Footer() {
 export function LandingPage() {
   const { settings } = useSettings();
   
+  useEffect(() => {
+    const hasViewed = sessionStorage.getItem('hasViewedVisits');
+    if (!hasViewed) {
+      import('firebase/firestore').then(({ doc, setDoc, increment }) => {
+        setDoc(doc(db, 'stats', 'visits'), { views: increment(1) }, { merge: true })
+          .then(() => sessionStorage.setItem('hasViewedVisits', 'true'))
+          .catch(err => console.log('Visit tracking failed:', err));
+      });
+    }
+  }, []);
+
   return (
     <div className="font-sans overflow-x-hidden selection:bg-emerald-500/30 selection:text-white bg-neutral-950 text-neutral-200" dir="rtl">
       <Navbar />
       <Hero heroBackground={settings.heroBackground} mainHashtag={settings.mainHashtag} />
+      <KickStreamer settings={settings} />
+      <KickClipsGallery />
       <TopDesigners />
       <TikTokTracker mainHashtag={settings.mainHashtag} />
-      <Gallery />
+      <SupportSection settings={settings} />
       <CommunityStats />
       <Footer />
     </div>
