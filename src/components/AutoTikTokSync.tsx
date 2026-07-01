@@ -74,6 +74,9 @@ export function AutoTikTokSync() {
               coverImageUrl: video.coverImageUrl || '',
               views: video.views || 0,
               likes: video.likes || 0,
+              comments: video.comments || 0,
+              shares: video.shares || 0,
+              downloads: video.downloads || 0,
               isReal: true,
               createdAt: serverTimestamp()
             });

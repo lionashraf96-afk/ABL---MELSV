@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 
-const CLIENT_ID = '1514873566200336464';
 
-export function useDiscordAuth() {
+
+export function useDiscordAuth(clientId?: string) {
   const [discordUser, setDiscordUser] = useState<any>(null);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function useDiscordAuth() {
     // Navigate directly using Implicit Grant flow
     const redirectUri = window.location.origin;
     const params = new URLSearchParams({
-      client_id: CLIENT_ID,
+      client_id: clientId || '1514873566200336464',
       redirect_uri: redirectUri,
       response_type: 'token',
       scope: 'identify'

@@ -7,12 +7,16 @@ export interface SiteSettings {
   whatsappLink: string;
   tiktokLink: string;
   instagramLink: string;
+  facebookLink?: string;
+  youtubeLink?: string;
   emailSupport: string;
   supportPhone: string;
   supportUsername: string;
   heroBackground?: string;
   mainHashtag?: string;
   kickUsername?: string;
+  kickProfileImage?: string;
+  discordClientId?: string;
   kickLiveOverride?: boolean;
   kickLiveTitle?: string;
   kickLiveViewers?: number;
@@ -24,12 +28,16 @@ const defaultSettings: SiteSettings = {
   whatsappLink: '#',
   tiktokLink: '#',
   instagramLink: '#',
+  facebookLink: '#',
+  youtubeLink: '#',
   emailSupport: 'support@abl-melsv.com',
   supportPhone: '+201508539885',
   supportUsername: '',
   heroBackground: '',
   mainHashtag: '#خرطوم_دوشا',
   kickUsername: '',
+  kickProfileImage: '',
+  discordClientId: '',
   kickLiveOverride: false,
   kickLiveTitle: 'بث مباشر',
   kickLiveViewers: 0,

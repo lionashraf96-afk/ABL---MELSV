@@ -57,5 +57,9 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+    match /top3Designers/{designerId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

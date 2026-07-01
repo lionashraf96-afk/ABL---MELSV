@@ -22,7 +22,10 @@ import {
   Edit2,
   BarChart,
   Activity,
-  DollarSign
+  DollarSign,
+  Star,
+  AlertTriangle,
+  Trophy
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSettings } from './hooks/useSettings';
@@ -40,9 +43,11 @@ interface JoinRequest {
   image?: string;
 }
 
+import { Top3DesignersTab } from './components/Top3DesignersTab';
+
 export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'requests' | 'settings' | 'tiktok' | 'designers' | 'video_analysis' | 'hashtag_designers' | 'staff' | 'clips'>('requests');
+  const [activeTab, setActiveTab] = useState<'requests' | 'settings' | 'tiktok' | 'designers' | 'video_analysis' | 'hashtag_designers' | 'staff' | 'top3_designers'>('requests');
   
   const { settings, saveSettings, isLoaded } = useSettings();
   const [formSettings, setFormSettings] = useState(settings);
@@ -324,7 +329,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const pendingRequests = requests.filter(r => r.status === 'pending');
+  const [dashboardSearchQuery, setDashboardSearchQuery] = useState('');
+  
+  // Requests Filtering
+  const filteredRequests = requests.filter(r => !dashboardSearchQuery || JSON.stringify(r).toLowerCase().includes(dashboardSearchQuery.toLowerCase()));
+  const pendingRequests = filteredRequests.filter(r => r.status === 'pending');
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-200 font-sans flex flex-col md:flex-row rtl" dir="rtl">
@@ -399,15 +408,15 @@ export default function AdminDashboard() {
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'hashtag_designers' ? 'bg-emerald-600/10 text-emerald-500' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
               >
                 <Users size={20} />
-                <span className="font-medium">ملفات المصممين</span>
+                <span className="font-medium">تحليل المصممين</span>
               </button>
 
               <button 
-                onClick={() => setActiveTab('clips')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'clips' ? 'bg-emerald-600/10 text-emerald-500' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
+                onClick={() => setActiveTab('top3_designers')}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === 'top3_designers' ? 'bg-amber-500/10 text-amber-500' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}
               >
-                <Video size={20} />
-                <span className="font-medium">إدارة الكليبات</span>
+                <Trophy size={20} />
+                <span className="font-medium">أفضل 3 مصممين</span>
               </button>
             </>
           )}
@@ -538,9 +547,20 @@ export default function AdminDashboard() {
             </div>
           ) : activeTab === 'requests' ? (
             <div className="max-w-5xl">
-              <div className="mb-8">
-                <h1 className="text-2xl font-bold text-white mb-2">طلبات الانضمام {pendingRequests.length > 0 && <span className="text-emerald-500">({pendingRequests.length} جديد)</span>}</h1>
-                <p className="text-neutral-400">راجع الطلبات واختار المصممين اللي هيكملوا معانا.</p>
+              <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-white mb-2">طلبات الانضمام {pendingRequests.length > 0 && <span className="text-emerald-500">({pendingRequests.length} جديد)</span>}</h1>
+                  <p className="text-neutral-400">راجع الطلبات واختار المصممين اللي هيكملوا معانا.</p>
+                </div>
+                <div className="w-full md:w-auto relative">
+                  <input 
+                    type="text" 
+                    placeholder="ابحث في الطلبات..." 
+                    value={dashboardSearchQuery}
+                    onChange={(e) => setDashboardSearchQuery(e.target.value)}
+                    className="w-full md:w-80 bg-neutral-900 border border-neutral-800 rounded-xl py-2.5 px-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                </div>
               </div>
 
               {requests.length === 0 ? (
@@ -551,7 +571,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {requests.map(request => (
+                  {filteredRequests.map(request => (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -949,6 +969,43 @@ export default function AdminDashboard() {
                         dir="ltr"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-300 mb-1">رابط Facebook</label>
+                      <input 
+                        type="url" 
+                        name="facebookLink"
+                        value={formSettings.facebookLink || ''}
+                        onChange={handleChange}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                        dir="ltr"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-300 mb-1">رابط YouTube</label>
+                      <input 
+                        type="url" 
+                        name="youtubeLink"
+                        value={formSettings.youtubeLink || ''}
+                        onChange={handleChange}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition"
+                        dir="ltr"
+                      />
+                    </div>
+                  
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-300 mb-1">معرف تطبيق ديسكورد (Discord Client ID)</label>
+                      <input 
+                        type="text" 
+                        name="discordClientId"
+                        value={formSettings.discordClientId || ''}
+                        onChange={handleChange}
+                        className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition"
+                        dir="ltr"
+                      />
+                      <p className="text-xs text-neutral-500 mt-2">قم بوضع Client ID الخاص بتطبيقك. لا تنسى إضافة روابط الموقع <code>{window.location.origin}</code> في إعدادات Redirect URIs في Discord Developer Portal.</p>
+                    </div>
                   </div>
 
                   <div className="pt-4 flex items-center justify-end gap-3 border-t border-neutral-800 pt-6">
@@ -969,9 +1026,9 @@ export default function AdminDashboard() {
           ) : activeTab === 'video_analysis' ? (
             <VideoAnalysisTab posts={tiktokPosts} />
           ) : activeTab === 'hashtag_designers' ? (
-            <HashtagDesignersTab posts={tiktokPosts} />
-          ) : activeTab === 'clips' ? (
-            <KickClipsTab />
+            <DesignersAnalyticsTab posts={tiktokPosts} />
+          ) : activeTab === 'top3_designers' ? (
+            <Top3DesignersTab />
           ) : (
             <TiktokTab posts={tiktokPosts} />
           )}
@@ -1040,6 +1097,7 @@ export default function AdminDashboard() {
 }
 
 function DesignersTab({ designers }: { designers: any[] }) {
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({ name: '', role: '', specialty: '', description: '', bestVideoUrl: '', image: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -1154,10 +1212,10 @@ function DesignersTab({ designers }: { designers: any[] }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {designers.map(d => (
+        {designers.filter(d => !searchQuery || JSON.stringify(d).toLowerCase().includes(searchQuery.toLowerCase())).map(d => (
           <div key={d.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-3 relative group">
             <div className="flex items-center gap-3">
-              <img src={d.image} alt={d.name} className="w-12 h-12 rounded-full object-cover" />
+              <img referrerPolicy="no-referrer" src={d.image} alt={d.name} onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(d.name || 'User')}&backgroundColor=059669,0d9488&textColor=ffffff`; }} className="w-12 h-12 rounded-full object-cover" />
               <div>
                 <h4 className="font-bold text-white text-sm">{d.name}</h4>
                 <p className="text-xs text-neutral-400">{d.role}</p>
@@ -1185,6 +1243,7 @@ function DesignersTab({ designers }: { designers: any[] }) {
 }
 
 function TiktokTab({ posts }: { posts: any[] }) {
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({ designerName: '', videoUrl: '', coverImageUrl: '', views: 0, isReal: true });
   const [submitting, setSubmitting] = useState(false);
 
@@ -1242,9 +1301,15 @@ function TiktokTab({ posts }: { posts: any[] }) {
         if (!existingUrls.has(video.videoUrl)) {
           await addDoc(collection(db, 'tiktokPosts'), {
             designerName: video.authorName || 'مصمم مجهول',
+            authorAvatar: video.authorAvatar || '',
+            uniqueId: video.uniqueId || '',
             videoUrl: video.videoUrl,
             coverImageUrl: video.coverImageUrl || '',
             views: video.views || 0,
+            likes: video.likes || 0,
+            comments: video.comments || 0,
+            shares: video.shares || 0,
+            downloads: video.downloads || 0,
             isReal: true,
             createdAt: serverTimestamp()
           });
@@ -1336,15 +1401,24 @@ function TiktokTab({ posts }: { posts: any[] }) {
         </form>
       </div>
 
+      <div className="mb-4">
+        <input 
+          type="text" 
+          placeholder="ابحث..." 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-neutral-900 border border-neutral-800 rounded-lg p-3 text-white focus:border-emerald-500 focus:outline-none"
+        />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {posts.map(p => (
+        {posts.filter(p => !searchQuery || JSON.stringify(p).toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
           <div key={p.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col gap-2 relative group overflow-hidden">
             <h4 className="font-bold text-white">{p.designerName}</h4>
             <div className="flex items-center justify-between text-sm text-neutral-400">
               <span>{p.views.toLocaleString('ar-EG')} مشاهدة</span>
               <span className={p.isReal ? 'text-emerald-500' : 'text-red-500'}>{p.isReal ? 'حقيقي' : 'فيك'}</span>
             </div>
-            {p.coverImageUrl && <img src={p.coverImageUrl} className="mt-2 w-full h-32 object-cover rounded-lg opacity-50" alt="" />}
+            {p.coverImageUrl && <img referrerPolicy="no-referrer" src={p.coverImageUrl} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop'; }} className="mt-2 w-full h-32 object-cover rounded-lg opacity-50" alt="" />}
             
             <button onClick={() => handleDelete(p.id)} className="absolute top-2 left-2 text-red-500 bg-neutral-900/80 hover:bg-red-500/20 p-2 rounded-lg md:opacity-0 md:group-hover:opacity-100 transition-opacity backdrop-blur-sm border border-transparent hover:border-red-500/30">
               <Trash2 size={16} />
@@ -1391,7 +1465,7 @@ function VideoAnalysisTab({ posts }: { posts: any[] }) {
             <div key={post.id} className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl flex flex-col md:flex-row items-center gap-6">
               <div className="w-full md:w-32 h-20 bg-neutral-800 rounded overflow-hidden flex-shrink-0 relative">
                 {post.coverImageUrl ? (
-                  <img src={post.coverImageUrl} className="w-full h-full object-cover" alt="cover" />
+                  <img referrerPolicy="no-referrer" src={post.coverImageUrl} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop'; }} className="w-full h-full object-cover" alt="cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-neutral-600 border border-neutral-700">
                      <Video size={24} />
@@ -1430,195 +1504,120 @@ function VideoAnalysisTab({ posts }: { posts: any[] }) {
   );
 }
 
-function KickClipsTab() {
-  const [clips, setClips] = useState<any[]>([]);
-  const [newTitle, setNewTitle] = useState('');
-  const [newUrl, setNewUrl] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'kickClips'), (snap) => {
-      const items: any[] = [];
-      snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      setClips(items.sort((a, b) => b.createdAt?.toMillis?.() - a.createdAt?.toMillis?.() || 0));
-    });
-    return () => unsub();
-  }, []);
-
-  const handleAddClip = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle || !newUrl) return;
-    setIsAdding(true);
-    try {
-      await addDoc(collection(db, 'kickClips'), {
-        title: newTitle,
-        url: newUrl,
-        createdAt: serverTimestamp()
-      });
-      setNewTitle('');
-      setNewUrl('');
-    } catch (err) {
-      console.error(err);
-      alert('حدث خطأ');
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا الكليب؟')) {
-      await import('firebase/firestore').then(({ doc, deleteDoc }) => {
-        deleteDoc(doc(db, 'kickClips', id));
-      });
-    }
-  };
-
-  return (
-    <div className="max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-2">كليبات بث Kick 🎬</h1>
-        <p className="text-neutral-400">ضيف الكليبات الحلوة من البث هنا عشان المصممين ينزلوها ويصمموها.</p>
-      </div>
-
-      <form onSubmit={handleAddClip} className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-2">عنوان الكليب</label>
-            <input
-              type="text"
-              required
-              value={newTitle}
-              onChange={e => setNewTitle(e.target.value)}
-              placeholder="وصف أو عنوان الكليب..."
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:border-emerald-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-2">رابط الكليب</label>
-            <input
-              type="url"
-              required
-              value={newUrl}
-              onChange={e => setNewUrl(e.target.value)}
-              placeholder="https://kick.com/username/clip/..."
-              className="w-full bg-neutral-950 border border-neutral-800 rounded-lg p-3 text-white focus:border-emerald-500 focus:outline-none"
-              dir="ltr"
-            />
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={isAdding}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-lg font-medium transition-colors"
-          >
-            <Plus size={20} />
-            إضافة كليب
-          </button>
-        </div>
-      </form>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {clips.map(clip => (
-          <div key={clip.id} className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 flex flex-col justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">{clip.title}</h3>
-              <a href={clip.url} target="_blank" rel="noreferrer" className="text-sm text-emerald-500 hover:underline break-all inline-block mb-4" dir="ltr">{clip.url}</a>
-            </div>
-            <div className="flex justify-end border-t border-neutral-800 pt-3">
-              <button
-                onClick={() => handleDelete(clip.id)}
-                className="text-red-500 hover:bg-red-500/10 px-3 py-1.5 rounded text-sm font-medium transition-colors"
-              >
-                حذف
-              </button>
-            </div>
-          </div>
-        ))}
-        {clips.length === 0 && (
-          <div className="col-span-full py-12 text-center text-neutral-500 bg-neutral-900/50 rounded-xl border border-neutral-800 border-dashed">
-            مفيش كليبات مضافة لحد دلوقتي
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HashtagDesignersTab({ posts }: { posts: any[] }) {
+function DesignersAnalyticsTab({ posts }: { posts: any[] }) {
   const [selectedDesigner, setSelectedDesigner] = useState<any>(null);
 
-  const analyzeVideo = (views: number, likes: number) => {
-    if (!views || views < 100) return 'real';
-    const ratio = likes / Math.max(1, views);
-    if (ratio < 0.01) return 'fake'; // Less than 1% engagement is considered fake
-    return 'real';
-  };
+  // Group designers
+  const m = new Map();
+  posts.forEach(p => {
+    const dId = p.uniqueId || p.designerName || 'unknown';
+    if (!m.has(dId)) {
+      m.set(dId, {
+        id: dId,
+        name: p.designerName || dId,
+        image: p.authorAvatar && p.authorAvatar.startsWith('http') 
+          ? p.authorAvatar 
+          : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(p.designerName || dId)}&backgroundColor=059669,0d9488&textColor=ffffff`,
+        postCount: 0,
+        totalViews: 0,
+        totalLikes: 0,
+        totalComments: 0,
+        totalShares: 0,
+        bestVideo: null,
+        exploreCount: 0
+      });
+    }
+    const d = m.get(dId);
+    d.postCount += 1;
+    d.totalViews += (p.views || 0);
+    d.totalLikes += (p.likes || 0);
+    d.totalComments += (p.comments || 0);
+    d.totalShares += (p.shares || 0);
+
+    // Check if video is in explore (e.g. > 10000 views)
+    if (p.views >= 10000) {
+       d.exploreCount += 1;
+    }
+
+    // Best Video logic
+    if (!d.bestVideo || (p.views || 0) > (d.bestVideo.views || 0)) {
+       d.bestVideo = p;
+    }
+
+    if (p.authorAvatar && p.authorAvatar.startsWith('http') && (!d.image || d.image.includes('dicebear'))) {
+       d.image = p.authorAvatar;
+    }
+  });
+
+  const designers = Array.from(m.values()).sort((a, b) => b.totalViews - a.totalViews); // Sort by total views initially
 
   if (selectedDesigner) {
-    const designerPosts = posts.filter(p => (p.uniqueId || p.designerName) === selectedDesigner.id);
+    const designerPosts = posts.filter(p => (p.uniqueId || p.designerName) === selectedDesigner.id)
+       .sort((a, b) => (b.views || 0) - (a.views || 0));
 
     return (
       <div className="space-y-6 max-w-6xl">
         <div className="flex items-center gap-4 mb-8">
           <button onClick={() => setSelectedDesigner(null)} className="text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-lg transition-colors font-medium text-sm border border-neutral-700">
-            العودة للقائمة
+            العودة للتحليل
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1">ملف المصمم: {selectedDesigner.name}</h1>
-            <p className="text-neutral-400">{designerPosts.length} فيديوهات من الهاشتاج</p>
+            <h1 className="text-2xl font-bold text-white mb-1">تحليل المصمم: {selectedDesigner.name}</h1>
+            <p className="text-neutral-400">{designerPosts.length} منشورات محملة</p>
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-xl mb-6 flex flex-col sm:flex-row items-center gap-6 text-center sm:text-right">
-          <img src={selectedDesigner.image} alt={selectedDesigner.name} className="w-24 h-24 rounded-full border-4 border-neutral-800 object-cover" />
-          <div>
-            <h2 className="text-xl font-bold text-white">{selectedDesigner.name}</h2>
-            <p className="text-neutral-400 mt-1" dir="ltr">@{selectedDesigner.id}</p>
-            <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-3">
-               <span className="text-sm bg-neutral-800 px-3 py-1 rounded-full text-emerald-400 font-bold border border-emerald-500/20">فيديوهات: {designerPosts.length}</span>
-               <span className="text-sm bg-neutral-800 px-3 py-1 rounded-full text-teal-400 font-bold border border-teal-500/20">إجمالي المشاهدات: {selectedDesigner.totalViews.toLocaleString('ar-EG')}</span>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+           <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-center">
+             <div className="text-neutral-400 text-sm mb-1">إجمالي المشاهدات</div>
+             <div className="text-2xl font-bold text-emerald-400">{selectedDesigner.totalViews.toLocaleString('ar-EG')}</div>
+           </div>
+           <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-center">
+             <div className="text-neutral-400 text-sm mb-1">إجمالي اللايكات</div>
+             <div className="text-2xl font-bold text-red-400">{selectedDesigner.totalLikes.toLocaleString('ar-EG')}</div>
+           </div>
+           <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-center">
+             <div className="text-neutral-400 text-sm mb-1">التعليقات والمشاركات</div>
+             <div className="text-2xl font-bold text-blue-400">{(selectedDesigner.totalComments + selectedDesigner.totalShares).toLocaleString('ar-EG')}</div>
+           </div>
+           <div className="bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-center">
+             <div className="text-neutral-400 text-sm mb-1">فيديوهات الإكسبلور</div>
+             <div className="text-2xl font-bold text-yellow-400">{selectedDesigner.exploreCount}</div>
+           </div>
         </div>
 
-        <h3 className="text-xl font-bold text-white mb-4">كل فيديوهات المصمم</h3>
+        <h3 className="text-xl font-bold text-white mb-4">أفضل الفيديوهات (الترتيب حسب المشاهدات)</h3>
         {designerPosts.length === 0 ? (
            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-12 text-center text-neutral-400">
              لا توجد فيديوهات حالياً لهذا المصمم
            </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {designerPosts.map(post => {
-              const isFake = analyzeVideo(post.views, post.likes) === 'fake';
-              
+            {designerPosts.map((post: any) => {
               return (
-                <div key={post.id} className={`relative bg-neutral-900 border ${isFake ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'border-neutral-800'} rounded-xl overflow-hidden group hover:border-emerald-500 transition-colors`}>
+                <div key={post.id} className="relative bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden group hover:border-emerald-500 transition-colors">
                   <div className="aspect-[9/16] relative bg-neutral-800">
                      {post.coverImageUrl ? (
-                       <img src={post.coverImageUrl} className="w-full h-full object-cover" alt="" />
+                       <img referrerPolicy="no-referrer" src={post.coverImageUrl} onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop'; }} className="w-full h-full object-cover" alt="" />
                      ) : (
                        <div className="w-full h-full flex items-center justify-center text-neutral-600"><Video size={32} /></div>
                      )}
                      <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent opacity-90" />
                      
-                     {isFake && (
-                       <div className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-lg shadow-red-900/50 z-10 border border-red-400/50">
-                          <XCircle size={12} /> مشاهدات فيك
-                       </div>
-                     )}
-
                      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-                       <div className="flex justify-between items-center text-sm mb-3">
+                       <div className="flex flex-wrap justify-between items-center text-sm mb-3 gap-2">
                          <span className="bg-neutral-900/80 backdrop-blur-sm text-white px-2 py-1 rounded border border-neutral-700 font-bold flex items-center gap-1.5 text-xs">
                            <Play size={12} className="fill-emerald-400 text-emerald-400" /> {(post.views || 0).toLocaleString('ar-EG')}
                          </span>
-                         <span className={`px-2 py-1 rounded text-xs font-bold border ${isFake ? 'bg-red-500/20 text-red-500 border-red-500/30' : 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30'}`} dir="ltr">
-                           {(((post.likes || 0) / Math.max(1, post.views || 1)) * 100).toFixed(1)}% <span className="opacity-70 font-normal">تفاعل</span>
+                         <span className="bg-neutral-900/80 backdrop-blur-sm text-white px-2 py-1 rounded border border-neutral-700 font-bold flex items-center gap-1.5 text-xs text-red-400">
+                            ❤ {(post.likes || 0).toLocaleString('ar-EG')}
+                         </span>
+                         <span className="bg-neutral-900/80 backdrop-blur-sm text-white px-2 py-1 rounded border border-neutral-700 font-bold flex items-center gap-1.5 text-xs text-blue-400">
+                            💬 {(post.comments || 0).toLocaleString('ar-EG')}
                          </span>
                        </div>
                        <a href={post.videoUrl} target="_blank" rel="noreferrer" className="block w-full text-center py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors text-sm shadow-lg shadow-emerald-900/50">
-                         فتح في تيك توك
+                         عرض في تيك توك
                        </a>
                      </div>
                   </div>
@@ -1631,67 +1630,77 @@ function HashtagDesignersTab({ posts }: { posts: any[] }) {
     );
   }
 
-  // Extract unique designers
-  const m = new Map();
-  posts.forEach(p => {
-    const dId = p.uniqueId || p.designerName || 'unknown';
-    if (!m.has(dId)) {
-      m.set(dId, {
-        id: dId,
-        name: p.designerName || dId,
-        image: p.authorAvatar && p.authorAvatar.startsWith('http') 
-          ? p.authorAvatar 
-          : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(p.designerName || dId)}&backgroundColor=059669,0d9488&textColor=ffffff`,
-        postCount: 0,
-        totalViews: 0
-      });
-    }
-    const d = m.get(dId);
-    d.postCount += 1;
-    d.totalViews += (p.views || 0);
-
-    // Update avatar if we get a better one
-    if (p.authorAvatar && p.authorAvatar.startsWith('http') && (!d.image || d.image.includes('dicebear'))) {
-       d.image = p.authorAvatar;
-    }
-  });
-
-  const designers = Array.from(m.values()).sort((a, b) => b.postCount - a.postCount);
-
   return (
     <div className="space-y-6 max-w-6xl">
        <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-2">مصممي الهاشتاج 👥</h1>
-          <p className="text-neutral-400">هنا بيظهر كل المصممين اللي نزلوا فيديوهات بالهاشتاج، وتقدر تدخل على ملف كل واحد تشوف فيديوهاته والتفاعل بتاعه.</p>
+          <h1 className="text-2xl font-bold text-white mb-2">تحليل أداء المصممين 📈</h1>
+          <p className="text-neutral-400">نظام تحليل شامل لجميع المصممين، المشاهدات، اللايكات، التعليقات، والإكسبلور.</p>
         </div>
       </div>
-      
+
       {designers.length === 0 ? (
          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-12 text-center text-neutral-400">
-           مفيش أي بيانات لمصممين حالياً
+           مفيش أي بيانات لمصممين حالياً للتحليل
          </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {designers.map(d => (
-            <button 
-              key={d.id}
-              onClick={() => setSelectedDesigner(d)}
-              className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-emerald-500/50 p-6 rounded-xl text-center transition-all group shadow-sm flex flex-col items-center"
-            >
-              <div className="w-20 h-20 rounded-full overflow-hidden mb-4 border-2 border-neutral-700 group-hover:border-emerald-500 transition-colors shadow-md relative">
-                 <img src={d.image} alt={d.name} className="w-full h-full object-cover" />
-                 <div className="absolute inset-0 border border-black/10 rounded-full" />
-              </div>
-              <h3 className="text-white font-bold truncate mb-1 w-full">{d.name}</h3>
-              <p className="text-neutral-500 text-xs mb-4 truncate w-full" dir="ltr">@{d.id}</p>
-              <div className="flex justify-center gap-2 w-full mt-auto">
-                <span className="bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20 px-3 py-1.5 text-xs rounded-lg w-full flex justify-center items-center gap-2">
-                  <Video size={14} /> فيديوهات: {d.postCount}
-                </span>
-              </div>
-            </button>
-          ))}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-sm">
+              <thead>
+                <tr className="bg-neutral-950 border-b border-neutral-800 text-neutral-400">
+                  <th className="p-4 font-medium">المصمم</th>
+                  <th className="p-4 font-medium">المنشورات</th>
+                  <th className="p-4 font-medium">المشاهدات</th>
+                  <th className="p-4 font-medium">اللايكات</th>
+                  <th className="p-4 font-medium">التعليقات</th>
+                  <th className="p-4 font-medium">الإكسبلور</th>
+                  <th className="p-4 font-medium">الأفضل</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-800">
+                {designers.map(d => (
+                  <tr key={d.id} className="hover:bg-neutral-800/50 transition-colors group cursor-pointer" onClick={() => setSelectedDesigner(d)}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                         <img referrerPolicy="no-referrer" src={d.image} onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(d.name || 'User')}&backgroundColor=059669,0d9488&textColor=ffffff`; }} className="w-10 h-10 rounded-full object-cover border border-neutral-700" alt="" />
+                         <div>
+                           <div className="font-bold text-white group-hover:text-emerald-400 transition-colors">{d.name}</div>
+                           <div className="text-xs text-neutral-500" dir="ltr">@{d.id}</div>
+                         </div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className="bg-neutral-800 px-2.5 py-1 rounded text-white font-medium">{d.postCount}</span>
+                    </td>
+                    <td className="p-4">
+                       <div className="font-bold text-emerald-400 flex items-center gap-1.5"><Play size={14} /> {d.totalViews.toLocaleString('ar-EG')}</div>
+                    </td>
+                    <td className="p-4 text-red-400 font-bold">
+                       {d.totalLikes.toLocaleString('ar-EG')}
+                    </td>
+                    <td className="p-4 text-blue-400 font-bold">
+                       {d.totalComments.toLocaleString('ar-EG')}
+                    </td>
+                    <td className="p-4">
+                       {d.exploreCount > 0 ? (
+                         <span className="bg-yellow-500/10 text-yellow-500 font-bold px-2.5 py-1 rounded flex items-center gap-1 w-max">
+                           <Star size={12} className="fill-yellow-500" /> {d.exploreCount}
+                         </span>
+                       ) : <span className="text-neutral-600">-</span>}
+                    </td>
+                    <td className="p-4">
+                       {d.bestVideo && (
+                         <div className="text-xs text-neutral-400">
+                           <div className="text-white font-bold mb-1">{(d.bestVideo.views || 0).toLocaleString('ar-EG')} مشاهدة</div>
+                         </div>
+                       )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

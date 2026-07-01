@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { PenTool, X, Send, Image as ImageIcon, Video, Layers, Users, Zap, Star, TrendingUp, Play, MessageCircle, MessageSquare, CheckCircle, Clock, Search, Download } from 'lucide-react';
+import { PenTool, X, Send, Image as ImageIcon, Video, Layers, Users, Zap, Star, TrendingUp, Play, MessageCircle, MessageSquare, CheckCircle, Clock, Search, Download, AlertTriangle, Instagram, Youtube, Facebook } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -24,8 +24,8 @@ const staggerContainer = {
   }
 };
 
-function Navbar() {
-  const { discordUser, login, logout } = useDiscordAuth();
+function Navbar({ settings }: { settings?: any }) {
+  const { discordUser, login, logout } = useDiscordAuth(settings?.discordClientId);
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-neutral-950/80 backdrop-blur-md border-b border-neutral-800">
@@ -38,7 +38,7 @@ function Navbar() {
             </span>
             {discordUser ? (
               <div className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-full pr-1 pl-3 py-1">
-                <img src={discordUser.avatar} alt="User" className="w-8 h-8 rounded-full border border-indigo-500" />
+                <img referrerPolicy="no-referrer" src={discordUser.avatar} alt="User" onError={(e) => { e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=U&backgroundColor=059669,0d9488&textColor=ffffff'; }} className="w-8 h-8 rounded-full border border-indigo-500" />
                 <span className="text-sm font-semibold text-white">{discordUser.global_name || discordUser.username}</span>
                 <button onClick={logout} className="ml-2 text-xs text-red-500 hover:text-red-400 font-medium">تسجيل الخروج</button>
               </div>
@@ -57,6 +57,7 @@ function Navbar() {
               <a href="#hero" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">الرئيسية</a>
               <a href="#top-designers" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">أحسن المصممين</a>
               <a href="#support" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">الدعم الفني</a>
+              <a href="#amr-accounts" className="hover:text-emerald-400 px-3 py-2 rounded-md text-sm font-medium transition-colors">حسابات عمر</a>
             </div>
           </div>
         </div>
@@ -65,7 +66,7 @@ function Navbar() {
   );
 }
 
-function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
+function JoinModal({ isOpen, onClose, settings }: { isOpen: boolean, onClose: () => void, settings?: any }) {
   const [formData, setFormData] = useState({
     name: '',
     tiktokUsername: '',
@@ -75,7 +76,7 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const { discordUser, login, logout, setDiscordUser } = useDiscordAuth();
+  const { discordUser, login, logout, setDiscordUser } = useDiscordAuth(settings?.discordClientId);
 
   useEffect(() => {
     if (discordUser && !formData.name) {
@@ -172,7 +173,7 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
                   <div className="bg-neutral-950 p-4 border border-neutral-800 rounded-xl flex flex-col items-center gap-3">
                     {discordUser ? (
                       <div className="flex items-center gap-4 w-full">
-                        <img src={discordUser.avatar} alt="Discord Avatar" className="w-12 h-12 rounded-full border border-indigo-500" />
+                        <img referrerPolicy="no-referrer" src={discordUser.avatar} alt="Discord Avatar" onError={(e) => { e.currentTarget.src = 'https://api.dicebear.com/7.x/initials/svg?seed=U&backgroundColor=059669,0d9488&textColor=ffffff'; }} className="w-12 h-12 rounded-full border border-indigo-500" />
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-bold truncate">{discordUser.global_name || discordUser.username}</p>
                           <p className="text-neutral-400 text-xs truncate">تم التسجيل بالديسكورد</p>
@@ -263,10 +264,10 @@ function JoinModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }
   );
 }
 
-function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHashtag?: string }) {
+function Hero({ heroBackground, mainHashtag, settings }: { heroBackground?: string, mainHashtag?: string, settings?: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [joinStatus, setJoinStatus] = useState<string | null>(null);
-  const { discordUser } = useDiscordAuth();
+  const { discordUser } = useDiscordAuth(settings?.discordClientId);
 
   useEffect(() => {
     import('firebase/firestore').then(({ doc, query, collection, where, onSnapshot }) => {
@@ -321,8 +322,8 @@ function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHa
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/50 to-neutral-950"></div>
       
       {/* Decorative blobs */}
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-600/20 rounded-full blur-[120px] mix-blend-screen pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-teal-600/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
+      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(5,150,105,0.1) 0%, rgba(0,0,0,0) 70%)' }}></div>
+      <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.05) 0%, rgba(0,0,0,0) 70%)' }}></div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center text-white">
         <motion.div
@@ -379,7 +380,7 @@ function Hero({ heroBackground, mainHashtag }: { heroBackground?: string, mainHa
         </motion.div>
       </div>
 
-      <JoinModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <JoinModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} settings={settings} />
     </section>
   );
 }
@@ -442,22 +443,21 @@ function KickStreamer({ settings }: { settings: any }) {
 
   return (
     <section className="py-8 bg-neutral-950 px-4 md:px-12 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[url('https://kick.com/favicon.ico')] opacity-5 bg-repeat bg-[length:100px] pointer-events-none"></div>
       <div className="max-w-7xl mx-auto relative z-10">
         <motion.div 
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
           variants={fadeIn}
-          className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-6 backdrop-blur-xl flex flex-col md:flex-row items-center gap-6 shadow-2xl relative overflow-hidden"
+          className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6 shadow-2xl relative overflow-hidden"
         >
           {status?.live && (
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
           )}
           
           <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-neutral-800 relative flex-shrink-0 bg-neutral-950 flex items-center justify-center">
             {status?.user?.avatar || status?.thumbnail ? (
-               <img src={status?.user?.avatar || status?.thumbnail} alt="Kick Profile" className="w-full h-full object-cover" />
+               <img referrerPolicy="no-referrer" src={status?.user?.avatar || settings?.kickProfileImage || status?.thumbnail} alt="Kick Profile" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop'; }} className="w-full h-full object-cover" />
             ) : (
                <Video size={32} className="text-neutral-500" />
             )}
@@ -518,33 +518,31 @@ function KickStreamer({ settings }: { settings: any }) {
 }
 
 function KickClipsGallery() {
-  const [manualClips, setManualClips] = useState<any[]>([]);
   const [autoClips, setAutoClips] = useState<any[]>([]);
   const { settings } = useSettings();
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'kickClips'), (snap) => {
-      const items: any[] = [];
-      snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-      setManualClips(items.sort((a, b) => b.createdAt?.toMillis?.() - a.createdAt?.toMillis?.() || 0));
-    }, (err) => console.error(err));
-    return () => unsub();
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     if (settings.kickUsername && settings.kickUsername.trim() !== '') {
         setLoading(true);
+        setFetchError(null);
         fetch(`/api/kick-clips/${encodeURIComponent(settings.kickUsername.trim())}`)
           .then(res => res.json())
           .then(data => {
              if (!mounted) return;
-             if (data && data.clips) {
+             if (data && data.error === 'cloudflare_blocked') {
+                setFetchError('تم حظر الاتصال بكيك بسبب الحماية (Cloudflare). يجب إضافة مفتاح ScraperAPI في لوحة التحكم (البيئة) لجلب الكليبات تلقائياً.');
+                setAutoClips([]);
+             } else if (data && data.clips) {
                 const fetchedClips = data.clips.map((c: any) => ({
                    id: c.id,
                    title: c.title,
                    url: c.video_url || c.clip_url,
+                   kickUrl: `https://kick.com/${c.channel?.slug || settings.kickUsername}/clips/${c.id}`,
                    thumbnail: c.thumbnail_url,
                    views: c.view_count || c.views,
                    createdAt: new Date(c.created_at) // For sorting
@@ -556,7 +554,10 @@ function KickClipsGallery() {
           })
           .catch(err => {
              console.error("Failed to load Kick auto clips:", err);
-             if (mounted) setAutoClips([]);
+             if (mounted) {
+                setAutoClips([]);
+                setFetchError('حدث خطأ أثناء جلب الكليبات التلقائية.');
+             }
           })
           .finally(() => {
              if (mounted) setLoading(false);
@@ -568,9 +569,10 @@ function KickClipsGallery() {
   }, [settings.kickUsername]);
 
   // Combine and sort clips
-  const clips = [...autoClips, ...manualClips];
+  const rawClips = [...autoClips];
+  const clips = rawClips.filter(c => c.title?.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  if (clips.length === 0 && !loading) return null;
+  if (rawClips.length === 0 && !loading && !fetchError) return null;
 
   return (
     <section className="py-24 bg-neutral-900 border-t border-neutral-800">
@@ -584,14 +586,41 @@ function KickClipsGallery() {
         >
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-4 py-2 rounded-full font-medium mb-6">
             <Video size={18} />
-            <span>كليبات جاهزة للتصميم</span>
+            <span>قسم الكليبات</span>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white tracking-tight">كليبات الأستريم 🎬</h2>
-          <p className="text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white tracking-tight">قسم الكليبات 🎬</h2>
+          <p className="text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-8">
             مجموعة من أقوى وأمتع كليبات البث المباشر، جاهزة للتحميل عشان تبدع في تصاميمك.
           </p>
+
+          <div className="max-w-xl mx-auto relative">
+            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+               <Search size={20} className="text-neutral-500" />
+            </div>
+            <input 
+              type="text" 
+              placeholder="ابحث في الكليبات..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-neutral-800 border border-neutral-700 text-white rounded-xl py-3 pr-12 pl-4 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
+          </div>
         </motion.div>
 
+        {loading ? (
+           <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+           </div>
+        ) : fetchError && rawClips.length === 0 ? (
+           <div className="text-center bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-xl max-w-2xl mx-auto">
+             <AlertTriangle size={24} className="mx-auto mb-3" />
+             <p>{fetchError}</p>
+           </div>
+        ) : clips.length === 0 && searchQuery ? (
+           <div className="text-center text-neutral-500 py-12">
+             لا توجد كليبات مطابقة للبحث "{searchQuery}"
+           </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {clips.map((clip, idx) => (
             <motion.div 
@@ -621,25 +650,24 @@ function KickClipsGallery() {
                 <h3 className="text-xl font-bold text-white mb-4 line-clamp-2">{clip.title}</h3>
                 
                 <div className="space-y-3">
-                  <a href={clip.url} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg transition-colors">
-                    مشاهدة الكليب
+                  <a href={clip.url} target="_blank" rel="noopener noreferrer" className="block w-full text-center bg-neutral-800 hover:bg-neutral-700 text-white font-medium py-2 rounded-lg transition-colors">
+                    مشاهدة
                   </a>
-                  <div className="bg-neutral-900 border border-neutral-800 p-3 rounded-lg">
-                    <p className="text-xs text-neutral-400 mb-2 text-center">أدوات تحميل الكليب بجودات مختلفة:</p>
-                    <div className="flex gap-2 justify-center">
-                      <a href={`https://snapsave.app/down.php?u=${encodeURIComponent(clip.url)}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs py-1.5 rounded transition-colors">
-                        <Download size={14} /> SnapSave
-                      </a>
-                      <a href={`https://tikder.com/?url=${encodeURIComponent(clip.url)}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs py-1.5 rounded transition-colors">
-                        <Download size={14} /> Tikder
-                      </a>
-                    </div>
-                  </div>
+                  {clip.url?.toLowerCase().endsWith('.mp4') ? (
+                     <a href={clip.url} download target="_blank" rel="noopener noreferrer" className="flex w-full items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition-colors">
+                        <Download size={18} /> تحميل الكليب مباشر
+                     </a>
+                  ) : (
+                     <a href={`https://kick-video.download/?url=${encodeURIComponent(clip.kickUrl || clip.url)}`} target="_blank" rel="noopener noreferrer" title="سيتم تحويلك لأداة تحميل الكليبات (استخدم الرابط المنسوخ إن لزم)" className="flex w-full items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition-colors">
+                        <Download size={18} /> تحميل الكليب 
+                     </a>
+                  )}
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
+        )}
       </div>
     </section>
   );
@@ -759,8 +787,7 @@ function TopDesigners() {
   }, []);
 
   return (
-    <section id="top-designers" className="py-24 relative bg-neutral-950">
-      <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+    <section id="top-designers" className="py-24 relative bg-neutral-950 overflow-hidden">
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full overflow-hidden">
         <div className="text-center mb-16">
@@ -793,9 +820,10 @@ function TopDesigners() {
                 <div className="absolute -inset-1.5 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-full group-hover:rotate-180 transition-transform duration-700"></div>
                 
                 <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden border-4 border-neutral-950">
-                  <img 
+                  <img referrerPolicy="no-referrer" 
                     src={designer.image} 
                     alt={designer.name} 
+                    onError={(e) => { e.currentTarget.src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(designer.name || 'User')}&backgroundColor=059669,0d9488&textColor=ffffff`; }}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-neutral-950/20 group-hover:bg-neutral-950/0 transition-colors"></div>
@@ -885,101 +913,6 @@ function SupportSection({ settings }: { settings: any }) {
             <p className="text-neutral-500 text-center">تواصل مباشر وسريع</p>
           </a>
         </div>
-      </div>
-    </section>
-  );
-}
-
-const growthData = [
-  { month: 'يناير', designers: 12 },
-  { month: 'فبراير', designers: 18 },
-  { month: 'مارس', designers: 29 },
-  { month: 'أبريل', designers: 45 },
-  { month: 'مايو', designers: 68 },
-  { month: 'يونيو', designers: 104 },
-];
-
-function CommunityStats() {
-  return (
-    <section className="py-32 relative bg-neutral-950 border-t border-neutral-900 overflow-hidden">
-      <div className="absolute top-1/2 right-0 w-96 h-96 bg-emerald-600/10 rounded-full blur-[100px] pointer-events-none translate-x-1/2 -translate-y-1/2"></div>
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium tracking-wide mb-4 text-sm"
-          >
-            <TrendingUp size={16} />
-            إحصائيات المجتمع
-          </motion.div>
-          <h3 className="text-4xl md:text-5xl font-extrabold text-white mb-4">نمو مستمر للمبدعين</h3>
-          <p className="text-neutral-400 max-w-2xl mx-auto text-lg">
-            مجتمعنا بيكبر كل يوم، ومصممين أكتر بينضموا عشان نرفع مستوى الإبداع ونتبادل الخبرات. 
-          </p>
-        </div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative"
-        >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl"></div>
-          <div className="h-[400px] w-full" dir="ltr">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={growthData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorDesigners" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#262626" vertical={false} />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#525252" 
-                  tick={{ fill: '#737373' }} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  dy={10}
-                />
-                <YAxis 
-                  stroke="#525252" 
-                  tick={{ fill: '#737373' }} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  dx={-10}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#171717', 
-                    borderColor: '#262626', 
-                    borderRadius: '0.75rem',
-                    color: '#e5e5e5',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
-                  }}
-                  itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
-                  labelStyle={{ color: '#a3a3a3', marginBottom: '0.5rem', textAlign: 'right' }}
-                  cursor={{ stroke: '#262626', strokeWidth: 1, strokeDasharray: '5 5' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="designers" 
-                  name="المصممين الجدد"
-                  stroke="#10b981" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorDesigners)" 
-                  activeDot={{ r: 6, fill: '#10b981', stroke: '#064e3b', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
@@ -1106,7 +1039,7 @@ function TikTokTracker({ mainHashtag }: { mainHashtag?: string }) {
               >
                 <div className="w-24 h-36 sm:w-32 sm:h-48 bg-neutral-900 relative overflow-hidden rounded-xl shrink-0">
                   {post.coverImageUrl ? (
-                    <img src={post.coverImageUrl} alt="TikTok Cover" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" />
+                    <img referrerPolicy="no-referrer" src={post.coverImageUrl} alt="TikTok Cover" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop'; }} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-neutral-900 text-neutral-800">
                       <Video size={32} />
@@ -1166,6 +1099,42 @@ function TikTokTracker({ mainHashtag }: { mainHashtag?: string }) {
   );
 }
 
+function AmrAccounts({ settings }: { settings: any }) {
+  const accounts = [
+    { name: 'تيك توك', icon: <Video size={24} />, url: settings?.tiktokLink || '#', color: 'bg-neutral-900 hover:bg-black', border: 'border-neutral-800' },
+    { name: 'انستجرام', icon: <Instagram size={24} />, url: settings?.instagramLink || '#', color: 'bg-gradient-to-tr from-yellow-500 via-pink-500 to-purple-600 hover:opacity-90', border: 'border-pink-500/30' },
+    { name: 'فيسبوك', icon: <Facebook size={24} />, url: settings?.facebookLink || '#', color: 'bg-blue-600 hover:bg-blue-700', border: 'border-blue-500/30' },
+    { name: 'يوتيوب', icon: <Youtube size={24} />, url: settings?.youtubeLink || '#', color: 'bg-red-600 hover:bg-red-700', border: 'border-red-500/30' },
+    { name: 'ديسكورد', icon: <MessageSquare size={24} />, url: settings?.discordLink || '#', color: 'bg-[#5865F2] hover:bg-[#4752C4]', border: 'border-[#5865F2]/30' },
+  ];
+
+  return (
+    <section id="official-links" className="py-20 relative z-20 bg-[#0a0a0a] border-t border-neutral-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16 relative">
+          <h2 className="text-3xl md:text-5xl font-black text-neutral-100 mb-4 tracking-tight">
+            حسابات عمر الرسمية
+          </h2>
+          <div className="w-24 h-1 bg-emerald-500 mx-auto rounded-full"></div>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 max-w-5xl mx-auto">
+          {accounts.map((acc, i) => (
+            <div 
+              key={i} 
+              onClick={() => acc.url !== '#' && window.open(acc.url, '_blank')}
+              className={`cursor-pointer flex flex-col items-center justify-center gap-3 p-6 rounded-2xl border ${acc.border} ${acc.color} text-white transition-transform hover:-translate-y-1 shadow-xl`}
+            >
+              {acc.icon}
+              <span className="font-bold text-sm md:text-base">{acc.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Footer() {
   return (
     <footer className="bg-neutral-950 py-12 border-t border-neutral-900 text-center relative z-20">
@@ -1204,20 +1173,22 @@ export function LandingPage() {
 
   return (
     <div className="font-sans overflow-x-hidden selection:bg-emerald-500/30 selection:text-white bg-neutral-950 text-neutral-200" dir="rtl">
-      <Navbar />
-      <Hero heroBackground={settings.heroBackground} mainHashtag={settings.mainHashtag} />
+      <Navbar settings={settings} />
+      <Hero heroBackground={settings.heroBackground} mainHashtag={settings.mainHashtag} settings={settings} />
       <KickStreamer settings={settings} />
-      <KickClipsGallery />
       <TopDesigners />
+      <Top3Designers />
       <TikTokTracker mainHashtag={settings.mainHashtag} />
+      <KickClipsGallery />
       <SupportSection settings={settings} />
-      <CommunityStats />
+      <AmrAccounts settings={settings} />
       <Footer />
     </div>
   );
 }
 
 import { AutoTikTokSync } from './components/AutoTikTokSync';
+import { Top3Designers } from './components/Top3Designers';
 
 export default function App() {
   return (

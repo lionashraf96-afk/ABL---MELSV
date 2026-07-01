@@ -136,6 +136,9 @@ async function startServer() {
         coverImageUrl: v.cover || v.origin_cover || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&q=60',
         views: v.play_count || 0,
         likes: v.digg_count || 0,
+        comments: v.comment_count || 0,
+        shares: v.share_count || 0,
+        downloads: v.download_count || 0,
         createdAt: v.create_time ? new Date(v.create_time * 1000).toISOString() : new Date().toISOString()
       })) : [];
 
@@ -198,12 +201,12 @@ async function startServer() {
       if (error.response && error.response.status === 404) {
          return res.status(200).json({ live: false, user: { avatar: '' } });
       }
-      console.error("Kick API Error:", error.message);
       // Determine if it was a 403 Forbidden
       if (error.response && (error.response.status === 403 || error.response.status === 503)) {
-         return res.status(403).json({ live: false, error: 'cloudflare_blocked', message: 'Kick blocked the request. Needs proxy.' });
+         return res.status(200).json({ live: false, error: 'cloudflare_blocked', message: 'Kick blocked the request. Needs proxy.' });
       }
-      res.status(500).json({ live: false, error: 'fetch_failed', message: error.message });
+      console.error("Kick API Error:", error.message);
+      res.status(200).json({ live: false, error: 'fetch_failed', message: error.message });
     }
   });
 
@@ -229,11 +232,11 @@ async function startServer() {
       if (error.response && error.response.status === 404) {
          return res.status(200).json({ clips: [] });
       }
-      console.error("Kick Clips API Error:", error.message);
       if (error.response && (error.response.status === 403 || error.response.status === 503)) {
-         return res.status(403).json({ error: 'cloudflare_blocked', message: 'Kick blocked the request. Needs proxy.' });
+         return res.status(200).json({ error: 'cloudflare_blocked', message: 'Kick blocked the request. Needs proxy.' });
       }
-      res.status(500).json({ error: 'fetch_failed', message: error.message });
+      console.error("Kick Clips API Error:", error.message);
+      res.status(200).json({ error: 'fetch_failed', message: error.message });
     }
   });
 
